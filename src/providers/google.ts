@@ -33,7 +33,7 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
     }
 
     async authenticate(req: Request) {
-        const client = new google.auth.OAuth2(this.clientId, this.clientSecret);
+        const client = new google.auth.OAuth2(this.clientId, this.clientSecret, req.url);
         const code = new URL(req.url).searchParams.get('code') ?? '';
 
         try {
