@@ -21,7 +21,7 @@ class GoogleProvider extends _1.Provider {
         return url;
     }
     async authenticate(req) {
-        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, `${new URL(req.url).origin}${new URL(req.url).pathname}}`);
+        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret);
         const code = new URL(req.url).searchParams.get('code') ?? '';
         try {
             const { tokens } = await client.getToken(code);
@@ -41,6 +41,7 @@ class GoogleProvider extends _1.Provider {
             }
         }
         catch (e) {
+            console.log(e);
             return undefined;
         }
     }

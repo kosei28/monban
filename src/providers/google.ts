@@ -33,11 +33,7 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
     }
 
     async authenticate(req: Request) {
-        const client = new google.auth.OAuth2(
-            this.clientId,
-            this.clientSecret,
-            `${new URL(req.url).origin}${new URL(req.url).pathname}}`,
-        );
+        const client = new google.auth.OAuth2(this.clientId, this.clientSecret);
         const code = new URL(req.url).searchParams.get('code') ?? '';
 
         try {
@@ -57,6 +53,7 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
                 } as GoogleAccountInfo;
             }
         } catch (e) {
+            console.log(e);
             return undefined;
         }
     }
