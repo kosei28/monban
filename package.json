@@ -4,7 +4,8 @@
     "description": "Simple authentication library",
     "main": "dist/main.js",
     "files": [
-        "dist"
+        "dist",
+        "providers"
     ],
     "scripts": {
         "build": "tsc",
