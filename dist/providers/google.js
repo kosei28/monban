@@ -41,7 +41,6 @@ class GoogleProvider extends _1.Provider {
             }
         }
         catch (e) {
-            console.log(e);
             return undefined;
         }
     }

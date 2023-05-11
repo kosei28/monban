@@ -53,7 +53,6 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
                 } as GoogleAccountInfo;
             }
         } catch (e) {
-            console.log(e);
             return undefined;
         }
     }
