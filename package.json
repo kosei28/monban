@@ -2,7 +2,7 @@
     "name": "monban",
     "version": "0.0.1",
     "description": "Simple authentication library",
-    "main": "dist/index.js",
+    "main": "dist/main.js",
     "files": [
         "dist"
     ],
