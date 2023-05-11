@@ -23,8 +23,10 @@ class GoogleProvider extends _1.Provider {
     async authenticate(req) {
         const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, req.url);
         const code = new URL(req.url).searchParams.get('code') ?? '';
+        console.log(code);
         try {
             const { tokens } = await client.getToken(code);
+            console.log(tokens);
             const ticket = await client.verifyIdToken({ idToken: tokens.id_token ?? '' });
             const payload = ticket.getPayload();
             if (payload === undefined) {
