@@ -1,45 +1,30 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Monban = exports.MemorySessionStore = exports.SessionStore = exports.Provider = void 0;
+exports.Monban = void 0;
 const uuid_1 = require("uuid");
 const jwt = require("jsonwebtoken");
 const cookie = require("cookie");
 const hono_1 = require("hono");
-class Provider {
-}
-exports.Provider = Provider;
-class SessionStore {
-}
-exports.SessionStore = SessionStore;
-class MemorySessionStore extends SessionStore {
-    async create(userId) {
-        const sessionId = (0, uuid_1.v4)();
-        if (globalThis.monbanSession === undefined) {
-            globalThis.monbanSession = {};
-        }
-        globalThis.monbanSession[sessionId] = userId;
-        return sessionId;
-    }
-    async get(sessionId) {
-        if (globalThis.monbanSession === undefined) {
-            return undefined;
-        }
-        const userId = globalThis.monbanSession[sessionId];
-        if (userId === undefined) {
-            return undefined;
-        }
-        return userId;
-    }
-    async delete(sessionId) {
-        if (globalThis.monbanSession !== undefined) {
-            delete globalThis.monbanSession[sessionId];
-        }
-    }
-}
-exports.MemorySessionStore = MemorySessionStore;
+__exportStar(require("./session"), exports);
+__exportStar(require("./user"), exports);
 class Monban {
     providers;
     sessionStore;
+    userManager;
     secret;
     maxAge = 60 * 60 * 24 * 30;
     csrf = true;
@@ -49,9 +34,10 @@ class Monban {
         secure: true,
         httpOnly: true,
     };
-    constructor(providers, sessionStore, options) {
+    constructor(providers, sessionStore, userManager, options) {
         this.providers = providers;
         this.sessionStore = sessionStore;
+        this.userManager = userManager;
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
         this.csrf = options.csrf ?? this.csrf;
@@ -61,6 +47,10 @@ class Monban {
                 ...options.cookie,
             };
         }
+    }
+    async createUser(accountInfo) {
+        const userId = await this.userManager.createUser(accountInfo);
+        return userId;
     }
     async createToken(userId) {
         const sessionId = await this.sessionStore.create(userId);
@@ -114,7 +104,7 @@ class Monban {
         return setCookie;
     }
     async createCsrfToken() {
-        const data = new TextEncoder().encode(`uuidv4()${this.secret}`);
+        const data = new TextEncoder().encode(`${(0, uuid_1.v4)()}${this.secret}`);
         const hash = await crypto.subtle.digest('SHA-256', data);
         const token = Array.from(new Uint8Array(hash))
             .map((v) => v.toString(16).padStart(2, '0'))
@@ -163,7 +153,7 @@ class Monban {
             if (session === undefined) {
                 return c.json(undefined);
             }
-            const user = await this.getUser(session.userId);
+            const user = await this.userManager.getUser(session.userId);
             await this.sessionStore.delete(session.id);
             const setCookie = await this.getSetCookie(session.userId);
             c.header('set-cookie', setCookie);
@@ -181,7 +171,7 @@ class Monban {
         app.get('/delete', async (c) => {
             const session = await this.getSession(c.req.raw);
             if (session !== undefined) {
-                await this.deleteUser(session.userId);
+                await this.userManager.deleteUser(session.userId);
                 await this.sessionStore.delete(session.id);
             }
             const setCookie = await this.getSetCookie(undefined);

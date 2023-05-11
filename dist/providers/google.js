@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GoogleProvider = void 0;
 const googleapis_1 = require("googleapis");
 const hono_1 = require("hono");
-const main_1 = require("../main");
-class GoogleProvider extends main_1.Provider {
+const _1 = require(".");
+class GoogleProvider extends _1.Provider {
     clientId;
     clientSecret;
     callbackUrl;

@@ -2,19 +2,12 @@ import { v4 as uuidv4 } from 'uuid';
 import * as jwt from 'jsonwebtoken';
 import * as cookie from 'cookie';
 import { Hono } from 'hono';
+import { AccountInfoBase, Providers } from './providers';
+import { MemorySessionStore } from './session';
+import { UserManager } from './user';
 
-declare global {
-    // eslint-disable-next-line no-var
-    var monbanSession: { [id: string]: string } | undefined;
-}
-
-export type AccountInfoBase = {
-    name: string;
-    email: string;
-    provider: string;
-};
-
-export type Providers<T extends AccountInfoBase> = { [name: string]: Provider<T> };
+export * from './session';
+export * from './user';
 
 export type Session = {
     id: string;
@@ -31,60 +24,17 @@ export type TokenPayload = TokenPayloadInput & {
     exp: number;
 };
 
-export type SessionManagerOptions = {
+export type MonbanOptions = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
 };
 
-export abstract class Provider<T extends AccountInfoBase> {
-    abstract handleLogin(req: Request, endpoint: string, monban: Monban<T>): Promise<Response>;
-}
-
-export abstract class SessionStore {
-    abstract create(userId: string): Promise<string>;
-    abstract get(sessionId: string): Promise<string | undefined>;
-    abstract delete(sessionId: string): Promise<void>;
-}
-
-export class MemorySessionStore extends SessionStore {
-    async create(userId: string) {
-        const sessionId = uuidv4();
-
-        if (globalThis.monbanSession === undefined) {
-            globalThis.monbanSession = {};
-        }
-
-        globalThis.monbanSession[sessionId] = userId;
-
-        return sessionId;
-    }
-
-    async get(sessionId: string) {
-        if (globalThis.monbanSession === undefined) {
-            return undefined;
-        }
-
-        const userId = globalThis.monbanSession[sessionId];
-
-        if (userId === undefined) {
-            return undefined;
-        }
-
-        return userId;
-    }
-
-    async delete(sessionId: string) {
-        if (globalThis.monbanSession !== undefined) {
-            delete globalThis.monbanSession[sessionId];
-        }
-    }
-}
-
 export abstract class Monban<T extends AccountInfoBase> {
     protected providers: Providers<T>;
     protected sessionStore: MemorySessionStore;
+    protected userManager: UserManager<T>;
     protected secret: string;
     protected maxAge = 60 * 60 * 24 * 30;
     protected csrf = true;
@@ -95,9 +45,15 @@ export abstract class Monban<T extends AccountInfoBase> {
         httpOnly: true,
     };
 
-    constructor(providers: Providers<T>, sessionStore: MemorySessionStore, options: SessionManagerOptions) {
+    constructor(
+        providers: Providers<T>,
+        sessionStore: MemorySessionStore,
+        userManager: UserManager<T>,
+        options: MonbanOptions,
+    ) {
         this.providers = providers;
         this.sessionStore = sessionStore;
+        this.userManager = userManager;
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
         this.csrf = options.csrf ?? this.csrf;
@@ -110,11 +66,11 @@ export abstract class Monban<T extends AccountInfoBase> {
         }
     }
 
-    abstract createUser(accountInfo: T): Promise<string>;
+    async createUser(accountInfo: T) {
+        const userId = await this.userManager.createUser(accountInfo);
 
-    abstract getUser(userId: string): Promise<object>;
-
-    abstract deleteUser(userId: string): Promise<void>;
+        return userId;
+    }
 
     async createToken(userId: string) {
         const sessionId = await this.sessionStore.create(userId);
@@ -177,7 +133,7 @@ export abstract class Monban<T extends AccountInfoBase> {
     }
 
     async createCsrfToken() {
-        const data = new TextEncoder().encode(`uuidv4()${this.secret}`);
+        const data = new TextEncoder().encode(`${uuidv4()}${this.secret}`);
         const hash = await crypto.subtle.digest('SHA-256', data);
         const token = Array.from(new Uint8Array(hash))
             .map((v) => v.toString(16).padStart(2, '0'))
@@ -240,7 +196,7 @@ export abstract class Monban<T extends AccountInfoBase> {
                 return c.json(undefined);
             }
 
-            const user = await this.getUser(session.userId);
+            const user = await this.userManager.getUser(session.userId);
 
             await this.sessionStore.delete(session.id);
 
@@ -267,7 +223,7 @@ export abstract class Monban<T extends AccountInfoBase> {
             const session = await this.getSession(c.req.raw);
 
             if (session !== undefined) {
-                await this.deleteUser(session.userId);
+                await this.userManager.deleteUser(session.userId);
                 await this.sessionStore.delete(session.id);
             }
 

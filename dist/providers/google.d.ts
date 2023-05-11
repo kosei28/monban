@@ -1,5 +1,6 @@
 import { Auth } from 'googleapis';
-import { Monban, Provider } from '../main';
+import { Monban } from '../main';
+import { Provider } from '.';
 type AccountInfo = {
     id: string;
     name: string;
