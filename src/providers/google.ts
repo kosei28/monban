@@ -1,4 +1,4 @@
-import { google, Auth } from 'googleapis';
+import { google } from 'googleapis';
 import { Hono } from 'hono';
 import { Monban } from '../main';
 import { Provider } from '.';
@@ -14,20 +14,17 @@ type GoogleAccountInfo = {
 export class GoogleProvider extends Provider<GoogleAccountInfo> {
     protected clientId: string;
     protected clientSecret: string;
-    protected callbackUrl: string;
-    protected client: Auth.OAuth2Client;
 
-    constructor(option: { clientId: string; clientSecret: string; callbackUrl: string }) {
+    constructor(option: { clientId: string; clientSecret: string }) {
         super();
 
         this.clientId = option.clientId;
         this.clientSecret = option.clientSecret;
-        this.callbackUrl = option.callbackUrl;
-        this.client = new google.auth.OAuth2(this.clientId, this.clientSecret, this.callbackUrl);
     }
 
-    getAuthUrl() {
-        const url = this.client.generateAuthUrl({
+    getAuthUrl(callbackUrl: string) {
+        const client = new google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
+        const url = client.generateAuthUrl({
             access_type: 'online',
             scope: ['profile', 'email'],
         });
@@ -36,11 +33,12 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
     }
 
     async authenticate(req: Request) {
+        const client = new google.auth.OAuth2(this.clientId, this.clientSecret);
         const code = new URL(req.url).searchParams.get('code') ?? '';
 
         try {
-            const { tokens } = await this.client.getToken(code);
-            const ticket = await this.client.verifyIdToken({ idToken: tokens.id_token ?? '' });
+            const { tokens } = await client.getToken(code);
+            const ticket = await client.verifyIdToken({ idToken: tokens.id_token ?? '' });
             const payload = ticket.getPayload();
 
             if (payload === undefined) {
@@ -63,7 +61,8 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
         const app = new Hono().basePath(endpoint);
 
         app.get('/', async (c) => {
-            const authUrl = this.getAuthUrl();
+            const callbackUrl = `${new URL(c.req.raw.url).origin}${endpoint}/callback`;
+            const authUrl = this.getAuthUrl(callbackUrl);
 
             return c.redirect(authUrl);
         });

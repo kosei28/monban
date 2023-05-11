@@ -7,27 +7,25 @@ const _1 = require(".");
 class GoogleProvider extends _1.Provider {
     clientId;
     clientSecret;
-    callbackUrl;
-    client;
     constructor(option) {
         super();
         this.clientId = option.clientId;
         this.clientSecret = option.clientSecret;
-        this.callbackUrl = option.callbackUrl;
-        this.client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, this.callbackUrl);
     }
-    getAuthUrl() {
-        const url = this.client.generateAuthUrl({
+    getAuthUrl(callbackUrl) {
+        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
+        const url = client.generateAuthUrl({
             access_type: 'online',
             scope: ['profile', 'email'],
         });
         return url;
     }
     async authenticate(req) {
+        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret);
         const code = new URL(req.url).searchParams.get('code') ?? '';
         try {
-            const { tokens } = await this.client.getToken(code);
-            const ticket = await this.client.verifyIdToken({ idToken: tokens.id_token ?? '' });
+            const { tokens } = await client.getToken(code);
+            const ticket = await client.verifyIdToken({ idToken: tokens.id_token ?? '' });
             const payload = ticket.getPayload();
             if (payload === undefined) {
                 return undefined;
@@ -49,7 +47,8 @@ class GoogleProvider extends _1.Provider {
     async handleLogin(req, endpoint, monban) {
         const app = new hono_1.Hono().basePath(endpoint);
         app.get('/', async (c) => {
-            const authUrl = this.getAuthUrl();
+            const callbackUrl = `${new URL(c.req.raw.url).origin}${endpoint}/callback`;
+            const authUrl = this.getAuthUrl(callbackUrl);
             return c.redirect(authUrl);
         });
         app.get('/callback', async (c) => {
