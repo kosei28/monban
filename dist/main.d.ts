@@ -52,5 +52,6 @@ export declare class Monban<T extends UserBase> {
         setCookie: string;
     }>;
     getSession(req: Request): Promise<Session<T> | undefined>;
+    handleRequest(req: Request, endpoint: string): Promise<Response>;
 }
 export {};

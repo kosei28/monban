@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import * as jwt from 'jsonwebtoken';
 import * as cookie from 'cookie';
+import { Hono } from 'hono';
 
 declare global {
     // eslint-disable-next-line no-var
@@ -200,5 +201,50 @@ export class Monban<T extends UserBase> {
 
             return session;
         }
+    }
+
+    async handleRequest(req: Request, endpoint: string) {
+        const app = new Hono().basePath(endpoint);
+
+        app.get('/me', async (c) => {
+            const session = await this.getSession(c.req.raw);
+
+            if (session === undefined) {
+                return c.json(undefined);
+            }
+
+            await this.sessionStore.delete(session.id);
+
+            const setCookie = await this.getSetCookie(session.user);
+            c.header('set-cookie', setCookie);
+
+            return c.json(session.user);
+        });
+
+        app.get('/logout', async (c) => {
+            const session = await this.getSession(c.req.raw);
+
+            if (session !== undefined) {
+                await this.sessionStore.delete(session.id);
+            }
+
+            const setCookie = await this.getSetCookie(undefined);
+            c.header('set-cookie', setCookie);
+
+            return c.json(undefined);
+        });
+
+        app.get('/csrf', async (c) => {
+            const { token, setCookie } = await this.createCsrfToken();
+            c.header('set-cookie', setCookie);
+
+            return c.json({
+                token,
+            });
+        });
+
+        const res = await app.fetch(req);
+
+        return res;
     }
 }

@@ -4,6 +4,7 @@ exports.Monban = exports.MemorySessionStore = exports.SessionStore = void 0;
 const uuid_1 = require("uuid");
 const jwt = require("jsonwebtoken");
 const cookie = require("cookie");
+const hono_1 = require("hono");
 class SessionStore {
 }
 exports.SessionStore = SessionStore;
@@ -141,6 +142,37 @@ class Monban {
             const session = await this.verify(payload);
             return session;
         }
+    }
+    async handleRequest(req, endpoint) {
+        const app = new hono_1.Hono().basePath(endpoint);
+        app.get('/me', async (c) => {
+            const session = await this.getSession(c.req.raw);
+            if (session === undefined) {
+                return c.json(undefined);
+            }
+            await this.sessionStore.delete(session.id);
+            const setCookie = await this.getSetCookie(session.user);
+            c.header('set-cookie', setCookie);
+            return c.json(session.user);
+        });
+        app.get('/logout', async (c) => {
+            const session = await this.getSession(c.req.raw);
+            if (session !== undefined) {
+                await this.sessionStore.delete(session.id);
+            }
+            const setCookie = await this.getSetCookie(undefined);
+            c.header('set-cookie', setCookie);
+            return c.json(undefined);
+        });
+        app.get('/csrf', async (c) => {
+            const { token, setCookie } = await this.createCsrfToken();
+            c.header('set-cookie', setCookie);
+            return c.json({
+                token,
+            });
+        });
+        const res = await app.fetch(req);
+        return res;
     }
 }
 exports.Monban = Monban;
