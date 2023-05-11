@@ -22,7 +22,7 @@ export type MonbanOptions = {
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
 };
-export declare abstract class Monban<T extends AccountInfoBase> {
+export declare class Monban<T extends AccountInfoBase> {
     protected providers: Providers<T>;
     protected sessionStore: MemorySessionStore;
     protected userManager: UserManager<T>;

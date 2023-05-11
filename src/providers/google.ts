@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { Monban } from '../main';
 import { Provider } from '.';
 
-type AccountInfo = {
+type GoogleAccountInfo = {
     id: string;
     name: string;
     email: string;
@@ -11,7 +11,7 @@ type AccountInfo = {
     provider: 'google';
 };
 
-export class GoogleProvider extends Provider<AccountInfo> {
+export class GoogleProvider extends Provider<GoogleAccountInfo> {
     protected clientId: string;
     protected clientSecret: string;
     protected callbackUrl: string;
@@ -52,14 +52,14 @@ export class GoogleProvider extends Provider<AccountInfo> {
                     email: payload.email,
                     picture: payload.picture,
                     provider: 'google',
-                } as AccountInfo;
+                } as GoogleAccountInfo;
             }
         } catch (e) {
             return undefined;
         }
     }
 
-    async handleLogin(req: Request, endpoint: string, monban: Monban<AccountInfo>) {
+    async handleLogin(req: Request, endpoint: string, monban: Monban<GoogleAccountInfo>) {
         const app = new Hono().basePath(endpoint);
 
         app.get('/', async (c) => {

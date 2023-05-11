@@ -31,7 +31,7 @@ export type MonbanOptions = {
     cookie?: cookie.CookieSerializeOptions;
 };
 
-export abstract class Monban<T extends AccountInfoBase> {
+export class Monban<T extends AccountInfoBase> {
     protected providers: Providers<T>;
     protected sessionStore: MemorySessionStore;
     protected userManager: UserManager<T>;
