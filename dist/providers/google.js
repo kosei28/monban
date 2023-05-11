@@ -20,8 +20,8 @@ class GoogleProvider extends _1.Provider {
         });
         return url;
     }
-    async authenticate(req) {
-        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, req.url);
+    async authenticate(req, callbackUrl) {
+        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
         const code = new URL(req.url).searchParams.get('code') ?? '';
         try {
             const { tokens } = await client.getToken(code);
@@ -47,13 +47,13 @@ class GoogleProvider extends _1.Provider {
     }
     async handleLogin(req, endpoint, monban) {
         const app = new hono_1.Hono().basePath(endpoint);
+        const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
         app.get('/', async (c) => {
-            const callbackUrl = `${new URL(c.req.raw.url).origin}${endpoint}/callback`;
             const authUrl = this.getAuthUrl(callbackUrl);
             return c.redirect(authUrl);
         });
         app.get('/callback', async (c) => {
-            const accountInfo = await this.authenticate(c.req.raw);
+            const accountInfo = await this.authenticate(c.req.raw, callbackUrl);
             if (accountInfo === undefined) {
                 return c.redirect(endpoint);
             }

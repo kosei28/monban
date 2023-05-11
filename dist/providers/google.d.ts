@@ -15,7 +15,7 @@ export declare class GoogleProvider extends Provider<GoogleAccountInfo> {
         clientSecret: string;
     });
     getAuthUrl(callbackUrl: string): string;
-    authenticate(req: Request): Promise<GoogleAccountInfo | undefined>;
+    authenticate(req: Request, callbackUrl: string): Promise<GoogleAccountInfo | undefined>;
     handleLogin(req: Request, endpoint: string, monban: Monban<GoogleAccountInfo>): Promise<Response>;
 }
 export {};
