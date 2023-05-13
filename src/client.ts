@@ -76,7 +76,7 @@ export class MonbanClient<T extends Monban<any, any, any>, U extends ProviderCli
         const res = await fetch(`${this.endpoint}/session`);
 
         try {
-            const session = (await res.json()) as Session<InferSessionUser<T>> | undefined;
+            const session = (await res.json()) as Session<InferSessionUser<T>>;
 
             return session;
         } catch (e) {
@@ -88,7 +88,7 @@ export class MonbanClient<T extends Monban<any, any, any>, U extends ProviderCli
         const res = await fetch(`${this.endpoint}/user`);
 
         try {
-            const user = (await res.json()) as InferUser<T> | undefined;
+            const user = (await res.json()) as InferUser<T>;
 
             return user;
         } catch (e) {
