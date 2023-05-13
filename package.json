@@ -7,7 +7,7 @@
         "dist"
     ],
     "exports": {
-        "./*": "./dist/*"
+        "./*": "./dist/*.js"
     },
     "scripts": {
         "build": "tsc",
