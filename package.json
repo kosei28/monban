@@ -16,9 +16,6 @@
     },
     "typesVersions": {
         "*": {
-            ".": [
-                "./dist/main.d.ts"
-            ],
             "providers/*": [
                 "./dist/providers/*"
             ]
