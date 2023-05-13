@@ -2,7 +2,6 @@ import { v4 as uuidv4 } from 'uuid';
 import * as jwt from 'jsonwebtoken';
 import * as cookie from 'cookie';
 import { Hono } from 'hono';
-import { AccountInfoBase, Providers } from './providers';
 
 export type Session<T extends SessionUserBase> = {
     id?: string;
@@ -23,7 +22,21 @@ export type TokenPayload = TokenPayloadInput & {
     exp: number;
 };
 
-type MonbanCallback<T extends AccountInfoBase, U extends SessionUserBase> = {
+export type AccountInfoBase = {
+    name: string;
+    email: string;
+    provider: string;
+};
+
+export type Providers<T extends AccountInfoBase, U extends SessionUserBase> = { [name: string]: Provider<T, U> };
+
+export type InferAccountInfo<T> = T extends Providers<infer U, SessionUserBase> ? U : never;
+
+export abstract class Provider<T extends AccountInfoBase, U extends SessionUserBase> {
+    abstract handleSignIn(req: Request, endpoint: string, monban: Monban<T, U>): Promise<Response>;
+}
+
+export type MonbanCallback<T extends AccountInfoBase, U extends SessionUserBase> = {
     createSession?: (accountInfo: T, userId: string, maxAge: number) => Promise<Session<U>>;
     refreshSession?: (oldSession: Session<U>, maxAge: number) => Promise<Session<U>>;
     verifySession?: (session: Session<U>) => Promise<boolean>;
@@ -266,7 +279,7 @@ export class Monban<T extends AccountInfoBase, U extends SessionUserBase = Sessi
             const setCookie = await this.getSetCookie(newSession);
             c.header('set-cookie', setCookie);
 
-            return c.json(newSession.user);
+            return c.json(newSession);
         });
 
         app.get('/me/user', async (c) => {

@@ -1,7 +1,6 @@
 import { Auth, google } from 'googleapis';
 import { Hono } from 'hono';
-import { Monban, SessionUserBase } from '../main';
-import { Provider } from '.';
+import { Monban, SessionUserBase, Provider } from '../../main';
 
 type GoogleAccountInfo = {
     id: string;
@@ -89,8 +88,4 @@ export class GoogleProvider<T extends SessionUserBase> extends Provider<GoogleAc
 
         return res;
     }
-}
-
-export async function googleSignIn(endpoint: string) {
-    location.href = `${endpoint}/signin/google`;
 }

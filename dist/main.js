@@ -1,10 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Monban = void 0;
+exports.Monban = exports.Provider = void 0;
 const uuid_1 = require("uuid");
 const jwt = require("jsonwebtoken");
 const cookie = require("cookie");
 const hono_1 = require("hono");
+class Provider {
+}
+exports.Provider = Provider;
 class Monban {
     providers;
     secret;
@@ -197,7 +200,7 @@ class Monban {
             const newSession = await this.refreshSession(session);
             const setCookie = await this.getSetCookie(newSession);
             c.header('set-cookie', setCookie);
-            return c.json(newSession.user);
+            return c.json(newSession);
         });
         app.get('/me/user', async (c) => {
             const session = await this.getSession(c.req.raw);

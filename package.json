@@ -4,9 +4,11 @@
     "description": "Simple authentication library",
     "main": "dist/main.js",
     "files": [
-        "dist",
-        "providers"
+        "dist"
     ],
+    "exports": {
+        "./*": "./dist/*"
+    },
     "scripts": {
         "build": "tsc",
         "lint": "prettier --check . && eslint .",
