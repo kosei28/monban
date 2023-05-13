@@ -135,14 +135,14 @@ class Monban {
     async getSetCookie(session) {
         let setCookie;
         if (session === undefined) {
-            setCookie = cookie.serialize('_monban_token', '', {
+            setCookie = cookie.serialize('_monbanToken', '', {
                 ...this.cookieOptions,
                 maxAge: 0,
             });
         }
         else {
             const token = await this.createToken(session);
-            setCookie = cookie.serialize('_monban_token', token, {
+            setCookie = cookie.serialize('_monbanToken', token, {
                 ...this.cookieOptions,
                 maxAge: this.maxAge,
             });
@@ -155,7 +155,7 @@ class Monban {
         const token = Array.from(new Uint8Array(hash))
             .map((v) => v.toString(16).padStart(2, '0'))
             .join('');
-        const setCookie = cookie.serialize('_monban_csrf_token', token, {
+        const setCookie = cookie.serialize('_monbanCsrfToken', token, {
             ...this.cookieOptions,
             maxAge: undefined,
         });
@@ -167,7 +167,7 @@ class Monban {
     async getSession(req) {
         const csrfTokenHeader = req.headers.get('x-monban-csrf-token');
         const cookieHeader = req.headers.get('cookie');
-        const { _monban_token: token, _monban_csrf_token: csrfToken } = cookie.parse(cookieHeader ?? '');
+        const { _monbanToken: token, _monbanCsrfToken: csrfToken } = cookie.parse(cookieHeader ?? '');
         if (req.method !== 'GET' && this.csrf && (csrfTokenHeader === null || csrfTokenHeader !== csrfToken)) {
             return undefined;
         }
@@ -194,27 +194,6 @@ class Monban {
             const res = provider.handleSignIn(c.req.raw, `${endpoint}/signin/${providerName}`, this);
             return res;
         });
-        app.get('/me/session', async (c) => {
-            const session = await this.getSession(c.req.raw);
-            if (session === undefined) {
-                return c.json(undefined);
-            }
-            const newSession = await this.refreshSession(session);
-            const setCookie = await this.getSetCookie(newSession);
-            c.header('set-cookie', setCookie);
-            return c.json(newSession);
-        });
-        app.get('/me/user', async (c) => {
-            const session = await this.getSession(c.req.raw);
-            if (session === undefined) {
-                return c.json(undefined);
-            }
-            const user = await this.getUser(session.user.id);
-            const newSession = await this.refreshSession(session);
-            const setCookie = await this.getSetCookie(newSession);
-            c.header('set-cookie', setCookie);
-            return c.json(user);
-        });
         app.get('/signout', async (c) => {
             const session = await this.getSession(c.req.raw);
             if (session?.id !== undefined) {
@@ -224,15 +203,26 @@ class Monban {
             c.header('set-cookie', setCookie);
             return c.json(undefined);
         });
-        app.get('/delete', async (c) => {
+        app.get('/session', async (c) => {
             const session = await this.getSession(c.req.raw);
-            if (session?.id !== undefined) {
-                await this.deleteUser(session.user.id);
-                await this.deleteSession(session);
+            if (session === undefined) {
+                return c.json(undefined);
             }
-            const setCookie = await this.getSetCookie(undefined);
+            const newSession = await this.refreshSession(session);
+            const setCookie = await this.getSetCookie(newSession);
             c.header('set-cookie', setCookie);
-            return c.json(undefined);
+            return c.json(newSession);
+        });
+        app.get('/user', async (c) => {
+            const session = await this.getSession(c.req.raw);
+            if (session === undefined) {
+                return c.json(undefined);
+            }
+            const user = await this.getUser(session.user.id);
+            const newSession = await this.refreshSession(session);
+            const setCookie = await this.getSetCookie(newSession);
+            c.header('set-cookie', setCookie);
+            return c.json(user);
         });
         app.get('/csrf', async (c) => {
             const { token, setCookie } = await this.createCsrfToken();

@@ -1,14 +1,26 @@
 import * as cookie from 'cookie';
+export type SessionUserBase = {
+    id: string;
+};
 export type Session<T extends SessionUserBase> = {
     id?: string;
     user: T;
 };
-export type SessionUserBase = {
-    id: string;
-};
 export type UserBase = {
     id: string;
 };
+export type InferSessionUser<T> = T extends Monban<infer U, any, any> ? U : never;
+export type InferUser<T> = T extends Monban<any, infer U, any> ? U : never;
+export type AccountInfoBase = {
+    provider: string;
+};
+export declare abstract class Provider<T extends AccountInfoBase> {
+    abstract handleSignIn(req: Request, endpoint: string, monban: Monban<any, any, T>): Promise<Response>;
+}
+export type Providers<T extends AccountInfoBase> = {
+    [name: string]: Provider<T>;
+};
+export type InferAccountInfo<T> = T extends Providers<infer U> ? U : never;
 export type TokenPayloadInput = {
     sub: string;
     sessionId?: string;
@@ -17,16 +29,6 @@ export type TokenPayload = TokenPayloadInput & {
     iat: number;
     exp: number;
 };
-export type AccountInfoBase = {
-    provider: string;
-};
-export type Providers<T extends AccountInfoBase> = {
-    [name: string]: Provider<T>;
-};
-export type InferAccountInfo<T> = T extends Providers<infer U> ? U : never;
-export declare abstract class Provider<T extends AccountInfoBase> {
-    abstract handleSignIn(req: Request, endpoint: string, monban: Monban<any, any, T>): Promise<Response>;
-}
 export type MonbanCallback<T extends SessionUserBase, U extends UserBase, V extends AccountInfoBase> = {
     createSession?: (user: U, accountInfo: V, maxAge: number) => Promise<Session<T>>;
     refreshSession?: (oldSession: Session<T>, maxAge: number) => Promise<Session<T>>;
