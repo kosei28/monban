@@ -4,13 +4,14 @@
     "description": "Simple authentication library",
     "main": "dist/main.js",
     "exports": {
-        "./*.js": "./dist/*.js"
+        ".": "./dist/main.js",
+        "./providers/*.js": "./dist/providers/*.js"
     },
     "files": [
         "dist"
     ],
     "scripts": {
-        "build": "tsc",
+        "build": "rimraf dist && tsc",
         "lint": "prettier --check . && eslint .",
         "format": "prettier --write .",
         "prepare": "husky install",
@@ -33,6 +34,7 @@
         "eslint-config-prettier": "^8.8.0",
         "husky": "^8.0.3",
         "prettier": "^2.8.8",
+        "rimraf": "^5.0.0",
         "typescript": "^5.0.4"
     },
     "dependencies": {
