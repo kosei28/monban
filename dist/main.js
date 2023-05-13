@@ -1,30 +1,12 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Monban = void 0;
 const uuid_1 = require("uuid");
 const jwt = require("jsonwebtoken");
 const cookie = require("cookie");
 const hono_1 = require("hono");
-__exportStar(require("./session"), exports);
-__exportStar(require("./user"), exports);
 class Monban {
     providers;
-    sessionStore;
-    userManager;
     secret;
     maxAge = 60 * 60 * 24 * 30;
     csrf = true;
@@ -34,13 +16,13 @@ class Monban {
         secure: true,
         httpOnly: true,
     };
-    constructor(providers, sessionStore, userManager, options) {
+    callback = {};
+    constructor(providers, options) {
         this.providers = providers;
-        this.sessionStore = sessionStore;
-        this.userManager = userManager;
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
         this.csrf = options.csrf ?? this.csrf;
+        this.callback = options.callback ?? this.callback;
         if (options.cookie !== undefined) {
             this.cookieOptions = {
                 ...this.cookieOptions,
@@ -48,15 +30,73 @@ class Monban {
             };
         }
     }
-    async createUser(accountInfo) {
-        const userId = await this.userManager.createUser(accountInfo);
-        return userId;
+    async createSession(accountInfo, userId) {
+        if (this.callback.createSession !== undefined) {
+            const session = await this.callback.createSession(accountInfo, userId, this.maxAge);
+            return session;
+        }
+        else {
+            const session = {
+                id: undefined,
+                user: {
+                    id: userId,
+                },
+            };
+            return session;
+        }
     }
-    async createToken(userId) {
-        const sessionId = await this.sessionStore.create(userId);
+    async refreshSession(oldSession) {
+        if (this.callback.refreshSession !== undefined) {
+            const session = await this.callback.refreshSession(oldSession, this.maxAge);
+            return session;
+        }
+        else {
+            return oldSession;
+        }
+    }
+    async verifySession(session) {
+        if (this.callback.verifySession !== undefined) {
+            const verified = await this.callback.verifySession(session);
+            return verified;
+        }
+        else {
+            return true;
+        }
+    }
+    async deleteSession(session) {
+        if (this.callback.deleteSession !== undefined) {
+            await this.callback.deleteSession(session);
+        }
+    }
+    async createUser(accountInfo) {
+        if (this.callback.createUser !== undefined) {
+            const userId = await this.callback.createUser(accountInfo);
+            return userId;
+        }
+        else {
+            const userId = (0, uuid_1.v4)();
+            return userId;
+        }
+    }
+    async getUser(userId) {
+        if (this.callback.getUser !== undefined) {
+            const user = await this.callback.getUser(userId);
+            return user;
+        }
+        else {
+            return undefined;
+        }
+    }
+    async deleteUser(userId) {
+        if (this.callback.deleteUser !== undefined) {
+            await this.callback.deleteUser(userId);
+        }
+    }
+    async createToken(session) {
         const payload = {
-            sub: userId,
-            sessionId: sessionId,
+            sub: session.user.id,
+            sessionId: session.id,
+            user: session.user,
         };
         const token = jwt.sign(payload, this.secret, {
             algorithm: 'HS256',
@@ -76,26 +116,27 @@ class Monban {
         }
     }
     async verify(payload) {
-        const userId = await this.sessionStore.get(payload.sessionId);
-        if (userId !== undefined && userId === payload.sub) {
-            const session = {
-                id: payload.sessionId,
-                userId: payload.sub,
-            };
+        const session = {
+            id: payload.sessionId,
+            user: payload.user,
+        };
+        if (await this.verifySession(session)) {
             return session;
         }
-        return undefined;
+        else {
+            return undefined;
+        }
     }
-    async getSetCookie(userId) {
+    async getSetCookie(session) {
         let setCookie;
-        if (userId === undefined) {
+        if (session === undefined) {
             setCookie = cookie.serialize('_monban_token', '', {
                 ...this.cookieOptions,
                 maxAge: 0,
             });
         }
         else {
-            const token = await this.createToken(userId);
+            const token = await this.createToken(session);
             setCookie = cookie.serialize('_monban_token', token, {
                 ...this.cookieOptions,
                 maxAge: this.maxAge,
@@ -139,30 +180,40 @@ class Monban {
     }
     async handleRequest(req, endpoint) {
         const app = new hono_1.Hono().basePath(endpoint);
-        app.get('/login/:provider/*', async (c) => {
+        app.get('/signin/:provider/*', async (c) => {
             const providerName = c.req.param('provider');
             const provider = this.providers[providerName];
             if (provider === undefined) {
                 return c.json(undefined, 404);
             }
-            const res = provider.handleLogin(c.req.raw, `${endpoint}/login/${providerName}`, this);
+            const res = provider.handleSignIn(c.req.raw, `${endpoint}/signin/${providerName}`, this);
             return res;
         });
-        app.get('/me', async (c) => {
+        app.get('/me/session', async (c) => {
             const session = await this.getSession(c.req.raw);
             if (session === undefined) {
                 return c.json(undefined);
             }
-            const user = await this.userManager.getUser(session.userId);
-            await this.sessionStore.delete(session.id);
-            const setCookie = await this.getSetCookie(session.userId);
+            const newSession = await this.refreshSession(session);
+            const setCookie = await this.getSetCookie(newSession);
+            c.header('set-cookie', setCookie);
+            return c.json(newSession.user);
+        });
+        app.get('/me/user', async (c) => {
+            const session = await this.getSession(c.req.raw);
+            if (session === undefined) {
+                return c.json(undefined);
+            }
+            const user = await this.getUser(session.user.id);
+            const newSession = await this.refreshSession(session);
+            const setCookie = await this.getSetCookie(newSession);
             c.header('set-cookie', setCookie);
             return c.json(user);
         });
-        app.get('/logout', async (c) => {
+        app.get('/signout', async (c) => {
             const session = await this.getSession(c.req.raw);
-            if (session !== undefined) {
-                await this.sessionStore.delete(session.id);
+            if (session?.id !== undefined) {
+                await this.deleteSession(session);
             }
             const setCookie = await this.getSetCookie(undefined);
             c.header('set-cookie', setCookie);
@@ -170,9 +221,9 @@ class Monban {
         });
         app.get('/delete', async (c) => {
             const session = await this.getSession(c.req.raw);
-            if (session !== undefined) {
-                await this.userManager.deleteUser(session.userId);
-                await this.sessionStore.delete(session.id);
+            if (session?.id !== undefined) {
+                await this.deleteUser(session.user.id);
+                await this.deleteSession(session);
             }
             const setCookie = await this.getSetCookie(undefined);
             c.header('set-cookie', setCookie);

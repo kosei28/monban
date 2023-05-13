@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GoogleProvider = void 0;
+exports.googleSignIn = exports.GoogleProvider = void 0;
 const googleapis_1 = require("googleapis");
 const hono_1 = require("hono");
 const _1 = require(".");
@@ -36,6 +36,7 @@ class GoogleProvider extends _1.Provider {
                     name: payload.name,
                     email: payload.email,
                     picture: payload.picture,
+                    tokens,
                     provider: 'google',
                 };
             }
@@ -44,7 +45,7 @@ class GoogleProvider extends _1.Provider {
             return undefined;
         }
     }
-    async handleLogin(req, endpoint, monban) {
+    async handleSignIn(req, endpoint, monban) {
         const app = new hono_1.Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
         app.get('/', async (c) => {
@@ -57,7 +58,8 @@ class GoogleProvider extends _1.Provider {
                 return c.redirect(endpoint);
             }
             const userId = await monban.createUser(accountInfo);
-            const setCookie = await monban.getSetCookie(userId);
+            const session = await monban.createSession(accountInfo, userId);
+            const setCookie = await monban.getSetCookie(session);
             c.header('set-cookie', setCookie);
             return c.redirect('/');
         });
@@ -66,4 +68,8 @@ class GoogleProvider extends _1.Provider {
     }
 }
 exports.GoogleProvider = GoogleProvider;
+async function googleSignIn(endpoint) {
+    location.href = `${endpoint}/signin/google`;
+}
+exports.googleSignIn = googleSignIn;
 //# sourceMappingURL=google.js.map

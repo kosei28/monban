@@ -1,6 +1,6 @@
-import { google } from 'googleapis';
+import { Auth, google } from 'googleapis';
 import { Hono } from 'hono';
-import { Monban } from '../main';
+import { Monban, SessionUserBase } from '../main';
 import { Provider } from '.';
 
 type GoogleAccountInfo = {
@@ -8,10 +8,11 @@ type GoogleAccountInfo = {
     name: string;
     email: string;
     picture: string;
+    tokens: Auth.Credentials;
     provider: 'google';
 };
 
-export class GoogleProvider extends Provider<GoogleAccountInfo> {
+export class GoogleProvider<T extends SessionUserBase> extends Provider<GoogleAccountInfo, T> {
     protected clientId: string;
     protected clientSecret: string;
 
@@ -49,6 +50,7 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
                     name: payload.name,
                     email: payload.email,
                     picture: payload.picture,
+                    tokens,
                     provider: 'google',
                 } as GoogleAccountInfo;
             }
@@ -57,7 +59,7 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
         }
     }
 
-    async handleLogin(req: Request, endpoint: string, monban: Monban<GoogleAccountInfo>) {
+    async handleSignIn(req: Request, endpoint: string, monban: Monban<GoogleAccountInfo, T>) {
         const app = new Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
 
@@ -75,8 +77,9 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
             }
 
             const userId = await monban.createUser(accountInfo);
+            const session = await monban.createSession(accountInfo, userId);
 
-            const setCookie = await monban.getSetCookie(userId);
+            const setCookie = await monban.getSetCookie(session);
             c.header('set-cookie', setCookie);
 
             return c.redirect('/');
@@ -86,4 +89,8 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
 
         return res;
     }
+}
+
+export async function googleSignIn(endpoint: string) {
+    location.href = `${endpoint}/signin/google`;
 }
