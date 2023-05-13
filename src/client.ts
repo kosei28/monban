@@ -61,7 +61,11 @@ export class MonbanClient<T extends Monban<any, any, any>, U extends ProviderCli
                 };
             },
         },
-    ) as { [key in keyof U]: U[key]['signIn'] };
+    ) as {
+        [key in keyof U]: U[key]['signIn'] extends (endpoint: string, ...args: infer P) => infer R
+            ? (...args: P) => R
+            : never;
+    };
 
     async signOut() {
         await fetch(`${this.endpoint}/signout`);
