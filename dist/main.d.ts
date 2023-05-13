@@ -40,7 +40,7 @@ export type MonbanOptions<T extends SessionUserBase, U extends AccountInfoBase> 
     cookie?: cookie.CookieSerializeOptions;
     callback?: MonbanCallback<T, U>;
 };
-export declare class Monban<T extends SessionUserBase = SessionUserBase, U extends AccountInfoBase = AccountInfoBase> {
+export declare class Monban<T extends SessionUserBase, U extends AccountInfoBase> {
     protected providers: Providers<T, U>;
     protected secret: string;
     protected maxAge: number;

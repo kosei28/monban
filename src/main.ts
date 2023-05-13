@@ -52,7 +52,7 @@ export type MonbanOptions<T extends SessionUserBase, U extends AccountInfoBase> 
     callback?: MonbanCallback<T, U>;
 };
 
-export class Monban<T extends SessionUserBase = SessionUserBase, U extends AccountInfoBase = AccountInfoBase> {
+export class Monban<T extends SessionUserBase, U extends AccountInfoBase> {
     protected providers: Providers<T, U>;
     protected secret: string;
     protected maxAge = 60 * 60 * 24 * 30;
