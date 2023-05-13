@@ -4,12 +4,16 @@
     "description": "Simple authentication library",
     "exports": {
         ".": {
-            "default": "./dist/main.js",
-            "types": "./dist/main.d.ts"
+            "import": {
+                "default": "./dist/main.js",
+                "types": "./dist/main.d.ts"
+            }
         },
         "./providers/*": {
-            "default": "./dist/providers/*.js",
-            "types": "./dist/providers/*.d.ts"
+            "import": {
+                "default": "./dist/providers/*.js",
+                "types": "./dist/providers/*.d.ts"
+            }
         }
     },
     "files": [
