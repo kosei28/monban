@@ -2,10 +2,15 @@
     "name": "monban",
     "version": "0.0.1",
     "description": "Simple authentication library",
-    "main": "dist/main.js",
     "exports": {
-        ".": "./dist/main.js",
-        "./providers/*": "./dist/providers/*.js"
+        ".": {
+            "default": "./dist/main.js",
+            "types": "./dist/main.d.ts"
+        },
+        "./providers/*": {
+            "default": "./dist/providers/*.js",
+            "types": "./dist/providers/*.d.ts"
+        }
     },
     "files": [
         "dist"
