@@ -11,7 +11,7 @@ type GoogleAccountInfo = {
     provider: 'google';
 };
 
-export class GoogleProvider<T extends SessionUserBase> extends Provider<GoogleAccountInfo, T> {
+export class GoogleProvider<T extends SessionUserBase> extends Provider<T, GoogleAccountInfo> {
     protected clientId: string;
     protected clientSecret: string;
 
@@ -58,7 +58,7 @@ export class GoogleProvider<T extends SessionUserBase> extends Provider<GoogleAc
         }
     }
 
-    async handleSignIn(req: Request, endpoint: string, monban: Monban<GoogleAccountInfo, T>) {
+    async handleSignIn(req: Request, endpoint: string, monban: Monban<T, GoogleAccountInfo>) {
         const app = new Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
 

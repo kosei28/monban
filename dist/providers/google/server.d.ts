@@ -8,7 +8,7 @@ type GoogleAccountInfo = {
     tokens: Auth.Credentials;
     provider: 'google';
 };
-export declare class GoogleProvider<T extends SessionUserBase> extends Provider<GoogleAccountInfo, T> {
+export declare class GoogleProvider<T extends SessionUserBase> extends Provider<T, GoogleAccountInfo> {
     protected clientId: string;
     protected clientSecret: string;
     constructor(option: {
@@ -17,6 +17,6 @@ export declare class GoogleProvider<T extends SessionUserBase> extends Provider<
     });
     getAuthUrl(callbackUrl: string): string;
     authenticate(req: Request, callbackUrl: string): Promise<GoogleAccountInfo | undefined>;
-    handleSignIn(req: Request, endpoint: string, monban: Monban<GoogleAccountInfo, T>): Promise<Response>;
+    handleSignIn(req: Request, endpoint: string, monban: Monban<T, GoogleAccountInfo>): Promise<Response>;
 }
 export {};

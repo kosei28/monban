@@ -15,34 +15,32 @@ export type TokenPayload = TokenPayloadInput & {
     exp: number;
 };
 export type AccountInfoBase = {
-    name: string;
-    email: string;
     provider: string;
 };
-export type Providers<T extends AccountInfoBase, U extends SessionUserBase> = {
+export type Providers<T extends SessionUserBase, U extends AccountInfoBase> = {
     [name: string]: Provider<T, U>;
 };
-export type InferAccountInfo<T> = T extends Providers<infer U, SessionUserBase> ? U : never;
-export declare abstract class Provider<T extends AccountInfoBase, U extends SessionUserBase> {
+export type InferAccountInfo<T> = T extends Providers<SessionUserBase, infer U> ? U : never;
+export declare abstract class Provider<T extends SessionUserBase, U extends AccountInfoBase> {
     abstract handleSignIn(req: Request, endpoint: string, monban: Monban<T, U>): Promise<Response>;
 }
-export type MonbanCallback<T extends AccountInfoBase, U extends SessionUserBase> = {
-    createSession?: (accountInfo: T, userId: string, maxAge: number) => Promise<Session<U>>;
-    refreshSession?: (oldSession: Session<U>, maxAge: number) => Promise<Session<U>>;
-    verifySession?: (session: Session<U>) => Promise<boolean>;
-    deleteSession?: (session: Session<U>) => Promise<void>;
-    createUser?: (accountInfo: T) => Promise<string>;
+export type MonbanCallback<T extends SessionUserBase, U extends AccountInfoBase> = {
+    createSession?: (accountInfo: U, userId: string, maxAge: number) => Promise<Session<T>>;
+    refreshSession?: (oldSession: Session<T>, maxAge: number) => Promise<Session<T>>;
+    verifySession?: (session: Session<T>) => Promise<boolean>;
+    deleteSession?: (session: Session<T>) => Promise<void>;
+    createUser?: (accountInfo: U) => Promise<string>;
     getUser?: (userId: string) => Promise<object | undefined>;
     deleteUser?: (userId: string) => Promise<void>;
 };
-export type MonbanOptions<T extends AccountInfoBase, U extends SessionUserBase> = {
+export type MonbanOptions<T extends SessionUserBase, U extends AccountInfoBase> = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
     callback?: MonbanCallback<T, U>;
 };
-export declare class Monban<T extends AccountInfoBase, U extends SessionUserBase = SessionUserBase> {
+export declare class Monban<T extends SessionUserBase = SessionUserBase, U extends AccountInfoBase = AccountInfoBase> {
     protected providers: Providers<T, U>;
     protected secret: string;
     protected maxAge: number;
@@ -50,28 +48,28 @@ export declare class Monban<T extends AccountInfoBase, U extends SessionUserBase
     protected cookieOptions: cookie.CookieSerializeOptions;
     protected callback: MonbanCallback<T, U>;
     constructor(providers: Providers<T, U>, options: MonbanOptions<T, U>);
-    createSession(accountInfo: T, userId: string): Promise<Session<U>>;
-    refreshSession(oldSession: Session<U>): Promise<Session<U>>;
-    verifySession(session: Session<U>): Promise<boolean>;
-    deleteSession(session: Session<U>): Promise<void>;
-    createUser(accountInfo: T): Promise<string>;
+    createSession(accountInfo: U, userId: string): Promise<Session<T>>;
+    refreshSession(oldSession: Session<T>): Promise<Session<T>>;
+    verifySession(session: Session<T>): Promise<boolean>;
+    deleteSession(session: Session<T>): Promise<void>;
+    createUser(accountInfo: U): Promise<string>;
     getUser(userId: string): Promise<object | undefined>;
     deleteUser(userId: string): Promise<void>;
-    createToken(session: Session<U>): Promise<string>;
+    createToken(session: Session<T>): Promise<string>;
     decodeToken(token: string): Promise<(TokenPayloadInput & {
         iat: number;
         exp: number;
     } & {
-        user: U;
+        user: T;
     }) | undefined>;
     verify(payload: TokenPayloadInput & {
-        user: U;
-    }): Promise<Session<U> | undefined>;
-    getSetCookie(session: Session<U> | undefined): Promise<string>;
+        user: T;
+    }): Promise<Session<T> | undefined>;
+    getSetCookie(session: Session<T> | undefined): Promise<string>;
     createCsrfToken(): Promise<{
         token: string;
         setCookie: string;
     }>;
-    getSession(req: Request): Promise<Session<U> | undefined>;
+    getSession(req: Request): Promise<Session<T> | undefined>;
     handleRequest(req: Request, endpoint: string): Promise<Response>;
 }

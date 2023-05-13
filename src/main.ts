@@ -23,30 +23,28 @@ export type TokenPayload = TokenPayloadInput & {
 };
 
 export type AccountInfoBase = {
-    name: string;
-    email: string;
     provider: string;
 };
 
-export type Providers<T extends AccountInfoBase, U extends SessionUserBase> = { [name: string]: Provider<T, U> };
+export type Providers<T extends SessionUserBase, U extends AccountInfoBase> = { [name: string]: Provider<T, U> };
 
-export type InferAccountInfo<T> = T extends Providers<infer U, SessionUserBase> ? U : never;
+export type InferAccountInfo<T> = T extends Providers<SessionUserBase, infer U> ? U : never;
 
-export abstract class Provider<T extends AccountInfoBase, U extends SessionUserBase> {
+export abstract class Provider<T extends SessionUserBase, U extends AccountInfoBase> {
     abstract handleSignIn(req: Request, endpoint: string, monban: Monban<T, U>): Promise<Response>;
 }
 
-export type MonbanCallback<T extends AccountInfoBase, U extends SessionUserBase> = {
-    createSession?: (accountInfo: T, userId: string, maxAge: number) => Promise<Session<U>>;
-    refreshSession?: (oldSession: Session<U>, maxAge: number) => Promise<Session<U>>;
-    verifySession?: (session: Session<U>) => Promise<boolean>;
-    deleteSession?: (session: Session<U>) => Promise<void>;
-    createUser?: (accountInfo: T) => Promise<string>;
+export type MonbanCallback<T extends SessionUserBase, U extends AccountInfoBase> = {
+    createSession?: (accountInfo: U, userId: string, maxAge: number) => Promise<Session<T>>;
+    refreshSession?: (oldSession: Session<T>, maxAge: number) => Promise<Session<T>>;
+    verifySession?: (session: Session<T>) => Promise<boolean>;
+    deleteSession?: (session: Session<T>) => Promise<void>;
+    createUser?: (accountInfo: U) => Promise<string>;
     getUser?: (userId: string) => Promise<object | undefined>;
     deleteUser?: (userId: string) => Promise<void>;
 };
 
-export type MonbanOptions<T extends AccountInfoBase, U extends SessionUserBase> = {
+export type MonbanOptions<T extends SessionUserBase, U extends AccountInfoBase> = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
@@ -54,7 +52,7 @@ export type MonbanOptions<T extends AccountInfoBase, U extends SessionUserBase> 
     callback?: MonbanCallback<T, U>;
 };
 
-export class Monban<T extends AccountInfoBase, U extends SessionUserBase = SessionUserBase> {
+export class Monban<T extends SessionUserBase = SessionUserBase, U extends AccountInfoBase = AccountInfoBase> {
     protected providers: Providers<T, U>;
     protected secret: string;
     protected maxAge = 60 * 60 * 24 * 30;
@@ -82,7 +80,7 @@ export class Monban<T extends AccountInfoBase, U extends SessionUserBase = Sessi
         }
     }
 
-    async createSession(accountInfo: T, userId: string) {
+    async createSession(accountInfo: U, userId: string) {
         if (this.callback.createSession !== undefined) {
             const session = await this.callback.createSession(accountInfo, userId, this.maxAge);
 
@@ -93,13 +91,13 @@ export class Monban<T extends AccountInfoBase, U extends SessionUserBase = Sessi
                 user: {
                     id: userId,
                 },
-            } as Session<U>;
+            } as Session<T>;
 
             return session;
         }
     }
 
-    async refreshSession(oldSession: Session<U>) {
+    async refreshSession(oldSession: Session<T>) {
         if (this.callback.refreshSession !== undefined) {
             const session = await this.callback.refreshSession(oldSession, this.maxAge);
 
@@ -109,7 +107,7 @@ export class Monban<T extends AccountInfoBase, U extends SessionUserBase = Sessi
         }
     }
 
-    async verifySession(session: Session<U>) {
+    async verifySession(session: Session<T>) {
         if (this.callback.verifySession !== undefined) {
             const verified = await this.callback.verifySession(session);
 
@@ -119,13 +117,13 @@ export class Monban<T extends AccountInfoBase, U extends SessionUserBase = Sessi
         }
     }
 
-    async deleteSession(session: Session<U>) {
+    async deleteSession(session: Session<T>) {
         if (this.callback.deleteSession !== undefined) {
             await this.callback.deleteSession(session);
         }
     }
 
-    async createUser(accountInfo: T) {
+    async createUser(accountInfo: U) {
         if (this.callback.createUser !== undefined) {
             const userId = await this.callback.createUser(accountInfo);
 
@@ -153,8 +151,8 @@ export class Monban<T extends AccountInfoBase, U extends SessionUserBase = Sessi
         }
     }
 
-    async createToken(session: Session<U>) {
-        const payload: TokenPayloadInput & { user: U } = {
+    async createToken(session: Session<T>) {
+        const payload: TokenPayloadInput & { user: T } = {
             sub: session.user.id,
             sessionId: session.id,
             user: session.user,
@@ -171,7 +169,7 @@ export class Monban<T extends AccountInfoBase, U extends SessionUserBase = Sessi
         try {
             const payload = jwt.verify(token, this.secret, {
                 algorithms: ['HS256'],
-            }) as TokenPayload & { user: U };
+            }) as TokenPayload & { user: T };
 
             return payload;
         } catch (e) {
@@ -179,11 +177,11 @@ export class Monban<T extends AccountInfoBase, U extends SessionUserBase = Sessi
         }
     }
 
-    async verify(payload: TokenPayloadInput & { user: U }) {
+    async verify(payload: TokenPayloadInput & { user: T }) {
         const session = {
             id: payload.sessionId,
             user: payload.user,
-        } as Session<U>;
+        } as Session<T>;
 
         if (await this.verifySession(session)) {
             return session;
@@ -192,7 +190,7 @@ export class Monban<T extends AccountInfoBase, U extends SessionUserBase = Sessi
         }
     }
 
-    async getSetCookie(session: Session<U> | undefined) {
+    async getSetCookie(session: Session<T> | undefined) {
         let setCookie: string;
 
         if (session === undefined) {
