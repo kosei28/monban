@@ -3,12 +3,12 @@
     "version": "0.0.1",
     "description": "Simple authentication library",
     "main": "dist/main.js",
+    "exports": {
+        "./*.js": "./dist/*.js"
+    },
     "files": [
         "dist"
     ],
-    "exports": {
-        "./*": "./dist/*.js"
-    },
     "scripts": {
         "build": "tsc",
         "lint": "prettier --check . && eslint .",
