@@ -59,7 +59,7 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleSignIn(req: Request, endpoint: string, monban: Monban<any, GoogleAccountInfo>) {
+    async handleSignIn(req: Request, endpoint: string, monban: Monban<any, any, GoogleAccountInfo>) {
         const app = new Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
 
@@ -76,8 +76,8 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
                 return c.redirect(endpoint);
             }
 
-            const userId = await monban.createUser(accountInfo);
-            const session = await monban.createSession(accountInfo, userId);
+            const user = await monban.createUser(accountInfo);
+            const session = await monban.createSession(user, accountInfo);
 
             const setCookie = await monban.getSetCookie(session);
             c.header('set-cookie', setCookie);

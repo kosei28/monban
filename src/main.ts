@@ -12,6 +12,10 @@ export type SessionUserBase = {
     id: string;
 };
 
+export type UserBase = {
+    id: string;
+};
+
 export type TokenPayloadInput = {
     sub: string;
     sessionId?: string;
@@ -32,29 +36,29 @@ export type InferAccountInfo<T> = T extends Providers<infer U> ? U : never;
 
 export abstract class Provider<T extends AccountInfoBase> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    abstract handleSignIn(req: Request, endpoint: string, monban: Monban<any, T>): Promise<Response>;
+    abstract handleSignIn(req: Request, endpoint: string, monban: Monban<any, any, T>): Promise<Response>;
 }
 
-export type MonbanCallback<T extends SessionUserBase, U extends AccountInfoBase> = {
-    createSession?: (accountInfo: U, userId: string, maxAge: number) => Promise<Session<T>>;
+export type MonbanCallback<T extends SessionUserBase, U extends UserBase, V extends AccountInfoBase> = {
+    createSession?: (user: U, accountInfo: V, maxAge: number) => Promise<Session<T>>;
     refreshSession?: (oldSession: Session<T>, maxAge: number) => Promise<Session<T>>;
     verifySession?: (session: Session<T>) => Promise<boolean>;
     deleteSession?: (session: Session<T>) => Promise<void>;
-    createUser?: (accountInfo: U) => Promise<string>;
-    getUser?: (userId: string) => Promise<object | undefined>;
+    createUser?: (accountInfo: V) => Promise<U>;
+    getUser?: (userId: string) => Promise<U | undefined>;
     deleteUser?: (userId: string) => Promise<void>;
 };
 
-export type MonbanOptions<T extends SessionUserBase, U extends AccountInfoBase> = {
+export type MonbanOptions<T extends SessionUserBase, U extends UserBase, V extends AccountInfoBase> = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
-    callback?: MonbanCallback<T, U>;
+    callback?: MonbanCallback<T, U, V>;
 };
 
-export class Monban<T extends SessionUserBase, U extends AccountInfoBase> {
-    protected providers: Providers<U>;
+export class Monban<T extends SessionUserBase, U extends UserBase, V extends AccountInfoBase> {
+    protected providers: Providers<V>;
     protected secret: string;
     protected maxAge = 60 * 60;
     protected csrf = true;
@@ -64,9 +68,9 @@ export class Monban<T extends SessionUserBase, U extends AccountInfoBase> {
         secure: true,
         httpOnly: true,
     };
-    protected callback: MonbanCallback<T, U> = {};
+    protected callback: MonbanCallback<T, U, V> = {};
 
-    constructor(providers: Providers<U>, options: MonbanOptions<T, U>) {
+    constructor(providers: Providers<V>, options: MonbanOptions<T, U, V>) {
         this.providers = providers;
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
@@ -81,16 +85,16 @@ export class Monban<T extends SessionUserBase, U extends AccountInfoBase> {
         }
     }
 
-    async createSession(accountInfo: U, userId: string) {
+    async createSession(user: U, accountInfo: V) {
         if (this.callback.createSession !== undefined) {
-            const session = await this.callback.createSession(accountInfo, userId, this.maxAge);
+            const session = await this.callback.createSession(user, accountInfo, this.maxAge);
 
             return session;
         } else {
             const session = {
                 id: undefined,
                 user: {
-                    id: userId,
+                    id: user.id,
                 },
             } as Session<T>;
 
@@ -124,15 +128,17 @@ export class Monban<T extends SessionUserBase, U extends AccountInfoBase> {
         }
     }
 
-    async createUser(accountInfo: U) {
+    async createUser(accountInfo: V) {
         if (this.callback.createUser !== undefined) {
-            const userId = await this.callback.createUser(accountInfo);
+            const user = await this.callback.createUser(accountInfo);
 
-            return userId;
+            return user;
         } else {
-            const userId = uuidv4();
+            const user = {
+                id: uuidv4(),
+            };
 
-            return userId;
+            return user;
         }
     }
 

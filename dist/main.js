@@ -33,16 +33,16 @@ class Monban {
             };
         }
     }
-    async createSession(accountInfo, userId) {
+    async createSession(user, accountInfo) {
         if (this.callback.createSession !== undefined) {
-            const session = await this.callback.createSession(accountInfo, userId, this.maxAge);
+            const session = await this.callback.createSession(user, accountInfo, this.maxAge);
             return session;
         }
         else {
             const session = {
                 id: undefined,
                 user: {
-                    id: userId,
+                    id: user.id,
                 },
             };
             return session;
@@ -73,12 +73,14 @@ class Monban {
     }
     async createUser(accountInfo) {
         if (this.callback.createUser !== undefined) {
-            const userId = await this.callback.createUser(accountInfo);
-            return userId;
+            const user = await this.callback.createUser(accountInfo);
+            return user;
         }
         else {
-            const userId = (0, uuid_1.v4)();
-            return userId;
+            const user = {
+                id: (0, uuid_1.v4)(),
+            };
+            return user;
         }
     }
     async getUser(userId) {

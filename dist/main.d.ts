@@ -6,6 +6,9 @@ export type Session<T extends SessionUserBase> = {
 export type SessionUserBase = {
     id: string;
 };
+export type UserBase = {
+    id: string;
+};
 export type TokenPayloadInput = {
     sub: string;
     sessionId?: string;
@@ -22,38 +25,40 @@ export type Providers<T extends AccountInfoBase> = {
 };
 export type InferAccountInfo<T> = T extends Providers<infer U> ? U : never;
 export declare abstract class Provider<T extends AccountInfoBase> {
-    abstract handleSignIn(req: Request, endpoint: string, monban: Monban<any, T>): Promise<Response>;
+    abstract handleSignIn(req: Request, endpoint: string, monban: Monban<any, any, T>): Promise<Response>;
 }
-export type MonbanCallback<T extends SessionUserBase, U extends AccountInfoBase> = {
-    createSession?: (accountInfo: U, userId: string, maxAge: number) => Promise<Session<T>>;
+export type MonbanCallback<T extends SessionUserBase, U extends UserBase, V extends AccountInfoBase> = {
+    createSession?: (user: U, accountInfo: V, maxAge: number) => Promise<Session<T>>;
     refreshSession?: (oldSession: Session<T>, maxAge: number) => Promise<Session<T>>;
     verifySession?: (session: Session<T>) => Promise<boolean>;
     deleteSession?: (session: Session<T>) => Promise<void>;
-    createUser?: (accountInfo: U) => Promise<string>;
-    getUser?: (userId: string) => Promise<object | undefined>;
+    createUser?: (accountInfo: V) => Promise<U>;
+    getUser?: (userId: string) => Promise<U | undefined>;
     deleteUser?: (userId: string) => Promise<void>;
 };
-export type MonbanOptions<T extends SessionUserBase, U extends AccountInfoBase> = {
+export type MonbanOptions<T extends SessionUserBase, U extends UserBase, V extends AccountInfoBase> = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
-    callback?: MonbanCallback<T, U>;
+    callback?: MonbanCallback<T, U, V>;
 };
-export declare class Monban<T extends SessionUserBase, U extends AccountInfoBase> {
-    protected providers: Providers<U>;
+export declare class Monban<T extends SessionUserBase, U extends UserBase, V extends AccountInfoBase> {
+    protected providers: Providers<V>;
     protected secret: string;
     protected maxAge: number;
     protected csrf: boolean;
     protected cookieOptions: cookie.CookieSerializeOptions;
-    protected callback: MonbanCallback<T, U>;
-    constructor(providers: Providers<U>, options: MonbanOptions<T, U>);
-    createSession(accountInfo: U, userId: string): Promise<Session<T>>;
+    protected callback: MonbanCallback<T, U, V>;
+    constructor(providers: Providers<V>, options: MonbanOptions<T, U, V>);
+    createSession(user: U, accountInfo: V): Promise<Session<T>>;
     refreshSession(oldSession: Session<T>): Promise<Session<T>>;
     verifySession(session: Session<T>): Promise<boolean>;
     deleteSession(session: Session<T>): Promise<void>;
-    createUser(accountInfo: U): Promise<string>;
-    getUser(userId: string): Promise<object | undefined>;
+    createUser(accountInfo: V): Promise<{
+        id: string;
+    }>;
+    getUser(userId: string): Promise<U | undefined>;
     deleteUser(userId: string): Promise<void>;
     createToken(session: Session<T>): Promise<string>;
     decodeToken(token: string): Promise<(TokenPayloadInput & {
