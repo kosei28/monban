@@ -45,6 +45,7 @@ class GoogleProvider extends main_1.Provider {
             return undefined;
         }
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async handleSignIn(req, endpoint, monban) {
         const app = new hono_1.Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;

@@ -1,5 +1,5 @@
 import { Auth } from 'googleapis';
-import { Monban, SessionUserBase, Provider } from '../../main';
+import { Monban, Provider } from '../../main';
 type GoogleAccountInfo = {
     id: string;
     name: string;
@@ -8,7 +8,7 @@ type GoogleAccountInfo = {
     tokens: Auth.Credentials;
     provider: 'google';
 };
-export declare class GoogleProvider<T extends SessionUserBase> extends Provider<T, GoogleAccountInfo> {
+export declare class GoogleProvider extends Provider<GoogleAccountInfo> {
     protected clientId: string;
     protected clientSecret: string;
     constructor(option: {
@@ -17,6 +17,6 @@ export declare class GoogleProvider<T extends SessionUserBase> extends Provider<
     });
     getAuthUrl(callbackUrl: string): string;
     authenticate(req: Request, callbackUrl: string): Promise<GoogleAccountInfo | undefined>;
-    handleSignIn(req: Request, endpoint: string, monban: Monban<T, GoogleAccountInfo>): Promise<Response>;
+    handleSignIn(req: Request, endpoint: string, monban: Monban<any, GoogleAccountInfo>): Promise<Response>;
 }
 export {};

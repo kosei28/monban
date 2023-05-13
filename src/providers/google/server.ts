@@ -1,6 +1,6 @@
 import { Auth, google } from 'googleapis';
 import { Hono } from 'hono';
-import { Monban, SessionUserBase, Provider } from '../../main';
+import { Monban, Provider } from '../../main';
 
 type GoogleAccountInfo = {
     id: string;
@@ -11,7 +11,7 @@ type GoogleAccountInfo = {
     provider: 'google';
 };
 
-export class GoogleProvider<T extends SessionUserBase> extends Provider<T, GoogleAccountInfo> {
+export class GoogleProvider extends Provider<GoogleAccountInfo> {
     protected clientId: string;
     protected clientSecret: string;
 
@@ -58,7 +58,8 @@ export class GoogleProvider<T extends SessionUserBase> extends Provider<T, Googl
         }
     }
 
-    async handleSignIn(req: Request, endpoint: string, monban: Monban<T, GoogleAccountInfo>) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async handleSignIn(req: Request, endpoint: string, monban: Monban<any, GoogleAccountInfo>) {
         const app = new Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
 

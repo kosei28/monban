@@ -26,12 +26,13 @@ export type AccountInfoBase = {
     provider: string;
 };
 
-export type Providers<T extends SessionUserBase, U extends AccountInfoBase> = { [name: string]: Provider<T, U> };
+export type Providers<T extends AccountInfoBase> = { [name: string]: Provider<T> };
 
-export type InferAccountInfo<T> = T extends Providers<SessionUserBase, infer U> ? U : never;
+export type InferAccountInfo<T> = T extends Providers<infer U> ? U : never;
 
-export abstract class Provider<T extends SessionUserBase, U extends AccountInfoBase> {
-    abstract handleSignIn(req: Request, endpoint: string, monban: Monban<T, U>): Promise<Response>;
+export abstract class Provider<T extends AccountInfoBase> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    abstract handleSignIn(req: Request, endpoint: string, monban: Monban<any, T>): Promise<Response>;
 }
 
 export type MonbanCallback<T extends SessionUserBase, U extends AccountInfoBase> = {
@@ -53,7 +54,7 @@ export type MonbanOptions<T extends SessionUserBase, U extends AccountInfoBase> 
 };
 
 export class Monban<T extends SessionUserBase, U extends AccountInfoBase> {
-    protected providers: Providers<T, U>;
+    protected providers: Providers<U>;
     protected secret: string;
     protected maxAge = 60 * 60 * 24 * 30;
     protected csrf = true;
@@ -65,7 +66,7 @@ export class Monban<T extends SessionUserBase, U extends AccountInfoBase> {
     };
     protected callback: MonbanCallback<T, U> = {};
 
-    constructor(providers: Providers<T, U>, options: MonbanOptions<T, U>) {
+    constructor(providers: Providers<U>, options: MonbanOptions<T, U>) {
         this.providers = providers;
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
