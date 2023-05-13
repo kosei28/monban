@@ -11,7 +11,7 @@ exports.Provider = Provider;
 class Monban {
     providers;
     secret;
-    maxAge = 60 * 60 * 24 * 30;
+    maxAge = 60 * 60;
     csrf = true;
     cookieOptions = {
         path: '/',

@@ -56,7 +56,7 @@ export type MonbanOptions<T extends SessionUserBase, U extends AccountInfoBase> 
 export class Monban<T extends SessionUserBase, U extends AccountInfoBase> {
     protected providers: Providers<U>;
     protected secret: string;
-    protected maxAge = 60 * 60 * 24 * 30;
+    protected maxAge = 60 * 60;
     protected csrf = true;
     protected cookieOptions: cookie.CookieSerializeOptions = {
         path: '/',
