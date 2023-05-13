@@ -5,7 +5,7 @@
     "main": "dist/main.js",
     "exports": {
         ".": "./dist/main.js",
-        "./providers/*.js": "./dist/providers/*.js"
+        "./providers/*": "./dist/providers/*.js"
     },
     "files": [
         "dist"
