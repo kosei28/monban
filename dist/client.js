@@ -51,13 +51,23 @@ class MonbanClient {
     }
     async getSession() {
         const res = await fetch(`${this.endpoint}/session`);
-        const session = (await res.json());
-        return session;
+        try {
+            const session = (await res.json());
+            return session;
+        }
+        catch (e) {
+            return undefined;
+        }
     }
     async getUser() {
         const res = await fetch(`${this.endpoint}/user`);
-        const user = (await res.json());
-        return user;
+        try {
+            const user = (await res.json());
+            return user;
+        }
+        catch (e) {
+            return undefined;
+        }
     }
     async resetCsrfToken() {
         const res = await fetch(`${this.endpoint}/csrf`);

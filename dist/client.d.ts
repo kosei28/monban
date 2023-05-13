@@ -15,8 +15,8 @@ export declare class MonbanClient<T extends Monban<any, any, any>, U extends Pro
     onSessionChange(callback: OnSessionChangeCallback<T>): void;
     signIn: { [key in keyof U]: U[key]["signIn"] extends (endpoint: string, ...args: infer P) => infer R ? (...args: P) => R : never; };
     signOut(): Promise<void>;
-    getSession(): Promise<Session<InferSessionUser<T>>>;
-    getUser(): Promise<InferUser<T>>;
+    getSession(): Promise<Session<InferSessionUser<T>> | undefined>;
+    getUser(): Promise<InferUser<T> | undefined>;
     resetCsrfToken(): Promise<string>;
     getCsrfToken(): Promise<string>;
 }

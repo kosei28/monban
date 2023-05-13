@@ -74,16 +74,26 @@ export class MonbanClient<T extends Monban<any, any, any>, U extends ProviderCli
 
     async getSession() {
         const res = await fetch(`${this.endpoint}/session`);
-        const session = (await res.json()) as Session<InferSessionUser<T>>;
 
-        return session;
+        try {
+            const session = (await res.json()) as Session<InferSessionUser<T>> | undefined;
+
+            return session;
+        } catch (e) {
+            return undefined;
+        }
     }
 
     async getUser() {
         const res = await fetch(`${this.endpoint}/user`);
-        const user = (await res.json()) as InferUser<T>;
 
-        return user;
+        try {
+            const user = (await res.json()) as InferUser<T> | undefined;
+
+            return user;
+        } catch (e) {
+            return undefined;
+        }
     }
 
     async resetCsrfToken() {
