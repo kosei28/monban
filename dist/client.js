@@ -72,7 +72,7 @@ class MonbanClient {
     }
     async getCsrfToken() {
         const { _monban_csrf_token: token } = cookie.parse(document.cookie);
-        if (token !== null) {
+        if (token !== undefined) {
             return token;
         }
         else {

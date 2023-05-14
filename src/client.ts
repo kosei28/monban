@@ -100,7 +100,7 @@ export class MonbanClient<T extends Monban<any, any, any>, U extends ProviderCli
     async getCsrfToken() {
         const { _monban_csrf_token: token } = cookie.parse(document.cookie);
 
-        if (token !== null) {
+        if (token !== undefined) {
             return token;
         } else {
             const res = await fetch(`${this.endpoint}/csrf`);
