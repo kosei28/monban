@@ -135,14 +135,14 @@ class Monban {
     async getSetCookie(session) {
         let setCookie;
         if (session === undefined) {
-            setCookie = cookie.serialize('_monbanToken', '', {
+            setCookie = cookie.serialize('_monban_token', '', {
                 ...this.cookieOptions,
                 maxAge: 0,
             });
         }
         else {
             const token = await this.createToken(session);
-            setCookie = cookie.serialize('_monbanToken', token, {
+            setCookie = cookie.serialize('_monban_token', token, {
                 ...this.cookieOptions,
                 maxAge: this.maxAge,
             });
@@ -155,9 +155,10 @@ class Monban {
         const token = Array.from(new Uint8Array(hash))
             .map((v) => v.toString(16).padStart(2, '0'))
             .join('');
-        const setCookie = cookie.serialize('_monbanCsrfToken', token, {
+        const setCookie = cookie.serialize('_monban_csrf_token', token, {
             ...this.cookieOptions,
             maxAge: undefined,
+            httpOnly: false,
         });
         return {
             token,
@@ -167,7 +168,7 @@ class Monban {
     async getSession(req) {
         const csrfTokenHeader = req.headers.get('x-monban-csrf-token');
         const cookieHeader = req.headers.get('cookie');
-        const { _monbanToken: token, _monbanCsrfToken: csrfToken } = cookie.parse(cookieHeader ?? '');
+        const { _monban_token: token, _monban_csrf_token: csrfToken } = cookie.parse(cookieHeader ?? '');
         if (req.method !== 'GET' && this.csrf && (csrfTokenHeader === null || csrfTokenHeader !== csrfToken)) {
             return undefined;
         }

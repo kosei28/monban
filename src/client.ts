@@ -1,3 +1,4 @@
+import * as cookie from 'cookie';
 import { InferSessionUser, InferUser, Monban, Session } from './main';
 
 export abstract class ProviderClient {
@@ -96,22 +97,14 @@ export class MonbanClient<T extends Monban<any, any, any>, U extends ProviderCli
         }
     }
 
-    async resetCsrfToken() {
-        const res = await fetch(`${this.endpoint}/csrf`);
-        const { token } = (await res.json()) as { token: string };
-
-        localStorage.setItem('_monbanCsrfToken', token);
-
-        return token;
-    }
-
     async getCsrfToken() {
-        const token = localStorage.getItem('_monbanCsrfToken');
+        const { _monban_csrf_token: token } = cookie.parse(document.cookie);
 
         if (token !== null) {
             return token;
         } else {
-            const token = await this.resetCsrfToken();
+            const res = await fetch(`${this.endpoint}/csrf`);
+            const { token } = (await res.json()) as { token: string };
 
             return token;
         }

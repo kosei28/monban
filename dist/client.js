@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MonbanClient = exports.ProviderClient = void 0;
+const cookie = require("cookie");
 class ProviderClient {
 }
 exports.ProviderClient = ProviderClient;
@@ -69,19 +70,14 @@ class MonbanClient {
             return undefined;
         }
     }
-    async resetCsrfToken() {
-        const res = await fetch(`${this.endpoint}/csrf`);
-        const { token } = (await res.json());
-        localStorage.setItem('_monbanCsrfToken', token);
-        return token;
-    }
     async getCsrfToken() {
-        const token = localStorage.getItem('_monbanCsrfToken');
+        const { _monban_csrf_token: token } = cookie.parse(document.cookie);
         if (token !== null) {
             return token;
         }
         else {
-            const token = await this.resetCsrfToken();
+            const res = await fetch(`${this.endpoint}/csrf`);
+            const { token } = (await res.json());
             return token;
         }
     }

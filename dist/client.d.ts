@@ -17,6 +17,5 @@ export declare class MonbanClient<T extends Monban<any, any, any>, U extends Pro
     signOut(): Promise<void>;
     getSession(): Promise<Session<InferSessionUser<T>> | undefined>;
     getUser(): Promise<InferUser<T> | undefined>;
-    resetCsrfToken(): Promise<string>;
     getCsrfToken(): Promise<string>;
 }
