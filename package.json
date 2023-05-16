@@ -9,6 +9,10 @@
             "default": "./dist/main.js",
             "types": "./dist/main.d.ts"
         },
+        "./types": {
+            "default": "./dist/types.js",
+            "types": "./dist/types.d.ts"
+        },
         "./client": {
             "default": "./dist/client.js",
             "types": "./dist/client.d.ts"
@@ -20,6 +24,9 @@
     },
     "typesVersions": {
         "*": {
+            "types": [
+                "./dist/types.d.ts"
+            ],
             "client": [
                 "./dist/client.d.ts"
             ],

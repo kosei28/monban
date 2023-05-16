@@ -1,5 +1,6 @@
 import * as cookie from 'cookie';
 import { InferSessionUser, Monban, Session } from './main';
+import { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 
 export type ProviderClientOptions = {
     endpoint: string;
@@ -14,14 +15,8 @@ export abstract class ProviderClient {
     abstract signIn(options: ProviderClientOptions, ...args: any): Promise<any>;
 }
 
-type RemoveUndefined<T> = T extends undefined ? never : T;
-
-export type ProviderClientMethods = RemoveUndefined<
-    {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        [K in keyof ProviderClient]: ProviderClient[K] extends ((...args: any) => any) | undefined ? K : never;
-    }[keyof ProviderClient]
->;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type ProviderClientMethods = KeyOfSpecificTypeValue<ProviderClient, ((...args: any) => any) | undefined>;
 
 export type ProviderClients<T extends ProviderClient> = { [key: string]: T };
 
@@ -90,11 +85,14 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients<
                     };
                 },
             },
-        ) as {
-            [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
-                ? (...args: P) => R
-                : undefined;
-        };
+        ) as OmitBySpecificTypeValue<
+            {
+                [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
+                    ? (...args: P) => R
+                    : undefined;
+            },
+            undefined
+        >;
 
         return proxy;
     }

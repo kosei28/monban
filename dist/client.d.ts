@@ -1,4 +1,5 @@
 import { InferSessionUser, Monban, Session } from './main';
+import { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 export type ProviderClientOptions = {
     endpoint: string;
     csrfToken: string;
@@ -7,10 +8,7 @@ export declare abstract class ProviderClient {
     signUp?(options: ProviderClientOptions, ...args: any): Promise<any>;
     abstract signIn(options: ProviderClientOptions, ...args: any): Promise<any>;
 }
-type RemoveUndefined<T> = T extends undefined ? never : T;
-export type ProviderClientMethods = RemoveUndefined<{
-    [K in keyof ProviderClient]: ProviderClient[K] extends ((...args: any) => any) | undefined ? K : never;
-}[keyof ProviderClient]>;
+export type ProviderClientMethods = KeyOfSpecificTypeValue<ProviderClient, ((...args: any) => any) | undefined>;
 export type ProviderClients<T extends ProviderClient> = {
     [key: string]: T;
 };
@@ -22,11 +20,10 @@ export declare class MonbanClient<T extends Monban<any, any>, U extends Provider
     constructor(endpoint: string, providerClients: U);
     protected triggerOnSessionChange(callback?: OnSessionChangeCallback<T>): Promise<void>;
     onSessionChange(callback: OnSessionChangeCallback<T>): void;
-    protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V): { [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; };
-    signUp: { [K in keyof U]: U[K]["signUp"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; };
-    signIn: { [K in keyof U]: U[K]["signIn"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; };
+    protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V): OmitBySpecificTypeValue<{ [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
+    signUp: OmitBySpecificTypeValue<{ [K in keyof U]: U[K]["signUp"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
+    signIn: OmitBySpecificTypeValue<{ [K in keyof U]: U[K]["signIn"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
     signOut(): Promise<void>;
     getSession(): Promise<Session<InferSessionUser<T>> | undefined>;
     getCsrfToken(): Promise<string>;
 }
-export {};
