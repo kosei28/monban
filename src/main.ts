@@ -21,7 +21,7 @@ export type AuthInfo = {
 
 export abstract class Provider<T extends AuthInfo> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    abstract handleRequest(req: Request, endpoint: string, monban: Monban<any, T>): Promise<Response>;
+    abstract handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<T>>): Promise<Response>;
 }
 
 export type Providers<T extends AuthInfo> = { [name: string]: Provider<T> };
@@ -39,16 +39,18 @@ export type TokenPayload<T extends SessionUser> = TokenPayloadInput<T> & {
     exp: number;
 };
 
-export type MonbanCallback<T extends SessionUser, U extends AuthInfo> = {
-    createSession?: (userId: string, authInfo: U, maxAge: number) => Promise<Session<T>>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type MonbanCallback<T extends SessionUser, U extends Providers<any>> = {
+    createSession?: (userId: string, authInfo: InferAuthInfo<U>, maxAge: number) => Promise<Session<T>>;
     refreshSession?: (oldSession: Session<T>, maxAge: number) => Promise<Session<T>>;
     verifySession?: (session: Session<T>) => Promise<boolean>;
     deleteSession?: (session: Session<T>) => Promise<void>;
-    createAccount?: (authInfo: U) => Promise<string>;
-    verifyUser?: (authInfo: U) => Promise<string | undefined>;
+    createAccount?: (authInfo: InferAuthInfo<U>) => Promise<string>;
+    verifyUser?: (authInfo: InferAuthInfo<U>) => Promise<string | undefined>;
 };
 
-export type MonbanOptions<T extends SessionUser, U extends AuthInfo> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type MonbanOptions<T extends SessionUser, U extends Providers<any>> = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
@@ -56,8 +58,9 @@ export type MonbanOptions<T extends SessionUser, U extends AuthInfo> = {
     callback?: MonbanCallback<T, U>;
 };
 
-export class Monban<T extends SessionUser, U extends AuthInfo> {
-    protected providers: Providers<U>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class Monban<T extends SessionUser, U extends Providers<any>> {
+    protected providers: U;
     protected secret: string;
     protected maxAge = 60 * 60;
     protected csrf = true;
@@ -69,7 +72,7 @@ export class Monban<T extends SessionUser, U extends AuthInfo> {
     };
     protected callback: MonbanCallback<T, U> = {};
 
-    constructor(providers: Providers<U>, options: MonbanOptions<T, U>) {
+    constructor(providers: U, options: MonbanOptions<T, U>) {
         this.providers = providers;
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
@@ -84,7 +87,7 @@ export class Monban<T extends SessionUser, U extends AuthInfo> {
         }
     }
 
-    async createSession(userId: string, authInfo: U) {
+    async createSession(userId: string, authInfo: InferAuthInfo<U>) {
         if (this.callback.createSession !== undefined) {
             const session = await this.callback.createSession(userId, authInfo, this.maxAge);
 
@@ -127,7 +130,7 @@ export class Monban<T extends SessionUser, U extends AuthInfo> {
         }
     }
 
-    async createAccount(authInfo: U) {
+    async createAccount(authInfo: InferAuthInfo<U>) {
         if (this.callback.createAccount !== undefined) {
             const userId = await this.callback.createAccount(authInfo);
 
@@ -139,7 +142,7 @@ export class Monban<T extends SessionUser, U extends AuthInfo> {
         }
     }
 
-    async verifyUser(authInfo: U) {
+    async verifyUser(authInfo: InferAuthInfo<U>) {
         if (this.callback.verifyUser !== undefined) {
             const userId = await this.callback.verifyUser(authInfo);
 

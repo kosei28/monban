@@ -8,6 +8,7 @@ const uuid_1 = require("uuid");
 class Provider {
 }
 exports.Provider = Provider;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 class Monban {
     providers;
     secret;

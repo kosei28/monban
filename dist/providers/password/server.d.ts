@@ -1,4 +1,4 @@
-import { Monban, Provider } from '../../main';
+import { Monban, Provider, Providers } from '../../main';
 type PasswordAuthInfo = {
     id: string;
     email: string;
@@ -6,10 +6,10 @@ type PasswordAuthInfo = {
     provider: 'password';
 };
 export declare class PasswordProvider extends Provider<PasswordAuthInfo> {
-    authenticate(req: Request, monban: Monban<any, PasswordAuthInfo>): Promise<{
+    authenticate(req: Request, monban: Monban<any, Providers<PasswordAuthInfo>>): Promise<{
         authInfo: PasswordAuthInfo;
         userId: string | undefined;
     } | undefined>;
-    handleRequest(req: Request, endpoint: string, monban: Monban<any, PasswordAuthInfo>): Promise<Response>;
+    handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<PasswordAuthInfo>>): Promise<Response>;
 }
 export {};

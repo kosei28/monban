@@ -25,8 +25,6 @@ export type ProviderClientMethods = RemoveUndefined<
 
 export type ProviderClients<T extends ProviderClient> = { [key: string]: T };
 
-export type InferProviderClient<T> = T extends ProviderClients<infer U> ? U : never;
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type OnSessionChangeCallback<T extends Monban<any, any>> = (
     session: Session<InferSessionUser<T>> | undefined,
@@ -93,7 +91,7 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients<
                 },
             },
         ) as {
-            [K in keyof U]: U[K][V] extends ((options: ProviderClientOptions, ...args: infer P) => infer R) | undefined
+            [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
                 ? (...args: P) => R
                 : never;
         };

@@ -1,6 +1,6 @@
 import { Auth, google } from 'googleapis';
 import { Hono } from 'hono';
-import { Monban, Provider } from '../../main';
+import { Monban, Provider, Providers } from '../../main';
 
 type GoogleAuthInfo = {
     id: string;
@@ -33,7 +33,7 @@ export class GoogleProvider extends Provider<GoogleAuthInfo> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async authenticate(req: Request, callbackUrl: string, monban: Monban<any, GoogleAuthInfo>) {
+    async authenticate(req: Request, callbackUrl: string, monban: Monban<any, Providers<GoogleAuthInfo>>) {
         const client = new google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
         const code = new URL(req.url).searchParams.get('code') ?? '';
 
@@ -67,7 +67,7 @@ export class GoogleProvider extends Provider<GoogleAuthInfo> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleRequest(req: Request, endpoint: string, monban: Monban<any, GoogleAuthInfo>) {
+    async handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<GoogleAuthInfo>>) {
         const app = new Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
 

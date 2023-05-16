@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { Monban, Provider } from '../../main';
+import { Monban, Provider, Providers } from '../../main';
 
 type PasswordAuthInfo = {
     id: string;
@@ -10,7 +10,7 @@ type PasswordAuthInfo = {
 
 export class PasswordProvider extends Provider<PasswordAuthInfo> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async authenticate(req: Request, monban: Monban<any, PasswordAuthInfo>) {
+    async authenticate(req: Request, monban: Monban<any, Providers<PasswordAuthInfo>>) {
         try {
             const { email, password } = await req.json();
 
@@ -37,7 +37,7 @@ export class PasswordProvider extends Provider<PasswordAuthInfo> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleRequest(req: Request, endpoint: string, monban: Monban<any, PasswordAuthInfo>) {
+    async handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<PasswordAuthInfo>>) {
         const app = new Hono().basePath(endpoint);
 
         app.post('/signup', async (c) => {
