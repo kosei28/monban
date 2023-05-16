@@ -22,9 +22,9 @@ export declare class MonbanClient<T extends Monban<any, any>, U extends Provider
     constructor(endpoint: string, providerClients: U);
     protected triggerOnSessionChange(callback?: OnSessionChangeCallback<T>): Promise<void>;
     onSessionChange(callback: OnSessionChangeCallback<T>): void;
-    protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V): { [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : never; };
-    signUp: { [K in keyof U]: U[K]["signUp"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : never; };
-    signIn: { [K in keyof U]: U[K]["signIn"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : never; };
+    protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V): { [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; };
+    signUp: { [K in keyof U]: U[K]["signUp"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; };
+    signIn: { [K in keyof U]: U[K]["signIn"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; };
     signOut(): Promise<void>;
     getSession(): Promise<Session<InferSessionUser<T>> | undefined>;
     getCsrfToken(): Promise<string>;

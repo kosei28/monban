@@ -93,7 +93,7 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients<
         ) as {
             [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
                 ? (...args: P) => R
-                : never;
+                : undefined;
         };
 
         return proxy;
