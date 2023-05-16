@@ -23,7 +23,9 @@ export type ProviderClientMethods = RemoveUndefined<
     }[keyof ProviderClient]
 >;
 
-export type ProviderClients = { [key: string]: ProviderClient };
+export type ProviderClients<T extends ProviderClient> = { [key: string]: T };
+
+export type InferProviderClient<T> = T extends ProviderClients<infer U> ? U : never;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type OnSessionChangeCallback<T extends Monban<any, any>> = (
@@ -31,12 +33,12 @@ export type OnSessionChangeCallback<T extends Monban<any, any>> = (
 ) => void;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients> {
+export class MonbanClient<T extends Monban<any, any>, U extends ProviderClient> {
     protected endpoint: string;
-    protected providerClients: U;
+    protected providerClients: ProviderClients<U>;
     protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[] = [];
 
-    constructor(endpoint: string, providerClients: U) {
+    constructor(endpoint: string, providerClients: ProviderClients<U>) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
     }
@@ -91,7 +93,10 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients>
                 },
             },
         ) as {
-            [key in keyof U]: U[key][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
+            [key in keyof ProviderClients<U>]: ProviderClients<U>[key][V] extends (
+                options: ProviderClientOptions,
+                ...args: infer P
+            ) => infer R
                 ? (...args: P) => R
                 : never;
         };

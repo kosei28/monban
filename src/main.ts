@@ -3,11 +3,11 @@ import { Hono } from 'hono';
 import * as jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
-export type SessionUserBase = {
+export type SessionUser = {
     id: string;
 };
 
-export type Session<T extends SessionUserBase> = {
+export type Session<T extends SessionUser> = {
     id?: string;
     user: T;
 };
@@ -15,31 +15,31 @@ export type Session<T extends SessionUserBase> = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type InferSessionUser<T> = T extends Monban<infer U, any> ? U : never;
 
-export type AuthInfoBase = {
+export type AuthInfo = {
     provider: string;
 };
 
-export abstract class Provider<T extends AuthInfoBase> {
+export abstract class Provider<T extends AuthInfo> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     abstract handleRequest(req: Request, endpoint: string, monban: Monban<any, T>): Promise<Response>;
 }
 
-export type Providers<T extends AuthInfoBase> = { [name: string]: Provider<T> };
+export type Providers<T extends AuthInfo> = { [name: string]: Provider<T> };
 
 export type InferAuthInfo<T> = T extends Providers<infer U> ? U : never;
 
-export type TokenPayloadInput<T extends SessionUserBase> = {
+export type TokenPayloadInput<T extends SessionUser> = {
     sub: string;
     sessionId?: string;
     user: T;
 };
 
-export type TokenPayload<T extends SessionUserBase> = TokenPayloadInput<T> & {
+export type TokenPayload<T extends SessionUser> = TokenPayloadInput<T> & {
     iat: number;
     exp: number;
 };
 
-export type MonbanCallback<T extends SessionUserBase, U extends AuthInfoBase> = {
+export type MonbanCallback<T extends SessionUser, U extends AuthInfo> = {
     createSession?: (userId: string, authInfo: U, maxAge: number) => Promise<Session<T>>;
     refreshSession?: (oldSession: Session<T>, maxAge: number) => Promise<Session<T>>;
     verifySession?: (session: Session<T>) => Promise<boolean>;
@@ -48,7 +48,7 @@ export type MonbanCallback<T extends SessionUserBase, U extends AuthInfoBase> = 
     verifyUser?: (authInfo: U) => Promise<string | undefined>;
 };
 
-export type MonbanOptions<T extends SessionUserBase, U extends AuthInfoBase> = {
+export type MonbanOptions<T extends SessionUser, U extends AuthInfo> = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
@@ -56,7 +56,7 @@ export type MonbanOptions<T extends SessionUserBase, U extends AuthInfoBase> = {
     callback?: MonbanCallback<T, U>;
 };
 
-export class Monban<T extends SessionUserBase, U extends AuthInfoBase> {
+export class Monban<T extends SessionUser, U extends AuthInfo> {
     protected providers: Providers<U>;
     protected secret: string;
     protected maxAge = 60 * 60;

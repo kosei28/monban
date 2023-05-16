@@ -1,32 +1,32 @@
 import * as cookie from 'cookie';
-export type SessionUserBase = {
+export type SessionUser = {
     id: string;
 };
-export type Session<T extends SessionUserBase> = {
+export type Session<T extends SessionUser> = {
     id?: string;
     user: T;
 };
 export type InferSessionUser<T> = T extends Monban<infer U, any> ? U : never;
-export type AuthInfoBase = {
+export type AuthInfo = {
     provider: string;
 };
-export declare abstract class Provider<T extends AuthInfoBase> {
+export declare abstract class Provider<T extends AuthInfo> {
     abstract handleRequest(req: Request, endpoint: string, monban: Monban<any, T>): Promise<Response>;
 }
-export type Providers<T extends AuthInfoBase> = {
+export type Providers<T extends AuthInfo> = {
     [name: string]: Provider<T>;
 };
 export type InferAuthInfo<T> = T extends Providers<infer U> ? U : never;
-export type TokenPayloadInput<T extends SessionUserBase> = {
+export type TokenPayloadInput<T extends SessionUser> = {
     sub: string;
     sessionId?: string;
     user: T;
 };
-export type TokenPayload<T extends SessionUserBase> = TokenPayloadInput<T> & {
+export type TokenPayload<T extends SessionUser> = TokenPayloadInput<T> & {
     iat: number;
     exp: number;
 };
-export type MonbanCallback<T extends SessionUserBase, U extends AuthInfoBase> = {
+export type MonbanCallback<T extends SessionUser, U extends AuthInfo> = {
     createSession?: (userId: string, authInfo: U, maxAge: number) => Promise<Session<T>>;
     refreshSession?: (oldSession: Session<T>, maxAge: number) => Promise<Session<T>>;
     verifySession?: (session: Session<T>) => Promise<boolean>;
@@ -34,14 +34,14 @@ export type MonbanCallback<T extends SessionUserBase, U extends AuthInfoBase> = 
     createAccount?: (authInfo: U) => Promise<string>;
     verifyUser?: (authInfo: U) => Promise<string | undefined>;
 };
-export type MonbanOptions<T extends SessionUserBase, U extends AuthInfoBase> = {
+export type MonbanOptions<T extends SessionUser, U extends AuthInfo> = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
     callback?: MonbanCallback<T, U>;
 };
-export declare class Monban<T extends SessionUserBase, U extends AuthInfoBase> {
+export declare class Monban<T extends SessionUser, U extends AuthInfo> {
     protected providers: Providers<U>;
     protected secret: string;
     protected maxAge: number;
