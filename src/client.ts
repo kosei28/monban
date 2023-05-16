@@ -33,12 +33,12 @@ export type OnSessionChangeCallback<T extends Monban<any, any>> = (
 ) => void;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class MonbanClient<T extends Monban<any, any>, U extends ProviderClient> {
+export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients<any>> {
     protected endpoint: string;
-    protected providerClients: ProviderClients<U>;
+    protected providerClients: U;
     protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[] = [];
 
-    constructor(endpoint: string, providerClients: ProviderClients<U>) {
+    constructor(endpoint: string, providerClients: U) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
     }
@@ -93,10 +93,7 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClient> 
                 },
             },
         ) as {
-            [key in keyof ProviderClients<U>]: ProviderClients<U>[key][V] extends (
-                options: ProviderClientOptions,
-                ...args: infer P
-            ) => infer R
+            [K in keyof U]: U[K][V] extends ((options: ProviderClientOptions, ...args: infer P) => infer R) | undefined
                 ? (...args: P) => R
                 : never;
         };
