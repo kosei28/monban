@@ -1,4 +1,4 @@
-import { ProviderClient } from '../../client';
+import { ProviderClient, ProviderClientOptions } from '../../client';
 export declare class GoogleClient extends ProviderClient {
-    signIn(endpoint: string): Promise<void>;
+    signIn(options: ProviderClientOptions): Promise<void>;
 }

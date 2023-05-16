@@ -10,6 +10,10 @@ class MonbanClient {
     endpoint;
     providerClients;
     onSessionChangeCallbacks = [];
+    constructor(endpoint, providerClients) {
+        this.endpoint = endpoint;
+        this.providerClients = providerClients;
+    }
     async triggerOnSessionChange(callback) {
         const session = await this.getSession();
         if (callback !== undefined) {
@@ -21,31 +25,36 @@ class MonbanClient {
             });
         }
     }
-    constructor(endpoint, providerClients) {
-        this.endpoint = endpoint;
-        this.providerClients = providerClients;
-    }
     onSessionChange(callback) {
         this.triggerOnSessionChange(callback);
         this.onSessionChangeCallbacks.push(callback);
     }
-    signIn = new Proxy({}, {
-        get: (target, provider) => {
-            if (typeof provider !== 'string') {
-                return undefined;
-            }
-            const providerClient = this.providerClients[provider];
-            if (providerClient === undefined) {
-                return undefined;
-            }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return async (...args) => {
+    createProviderMethodProxy(method) {
+        const proxy = new Proxy({}, {
+            get: (target, provider) => {
+                if (typeof provider !== 'string') {
+                    return undefined;
+                }
+                const providerClient = this.providerClients[provider];
+                if (providerClient === undefined) {
+                    return undefined;
+                }
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await providerClient.signIn(this.endpoint, ...args);
-                await this.triggerOnSessionChange();
-            };
-        },
-    });
+                return async (...args) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const result = await providerClient[method]({
+                        endpoint: this.endpoint,
+                        csrfToken: await this.getCsrfToken(),
+                    }, ...args);
+                    this.triggerOnSessionChange();
+                    return result;
+                };
+            },
+        });
+        return proxy;
+    }
+    signUp = this.createProviderMethodProxy('signUp');
+    signIn = this.createProviderMethodProxy('signIn');
     async signOut() {
         await fetch(`${this.endpoint}/signout`);
         await this.triggerOnSessionChange();
@@ -55,16 +64,6 @@ class MonbanClient {
         try {
             const session = (await res.json());
             return session;
-        }
-        catch (e) {
-            return undefined;
-        }
-    }
-    async getUser() {
-        const res = await fetch(`${this.endpoint}/user`);
-        try {
-            const user = (await res.json());
-            return user;
         }
         catch (e) {
             return undefined;

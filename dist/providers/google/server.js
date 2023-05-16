@@ -20,7 +20,8 @@ class GoogleProvider extends main_1.Provider {
         });
         return url;
     }
-    async authenticate(req, callbackUrl) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async authenticate(req, callbackUrl, monban) {
         const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
         const code = new URL(req.url).searchParams.get('code') ?? '';
         try {
@@ -31,13 +32,18 @@ class GoogleProvider extends main_1.Provider {
                 return undefined;
             }
             else {
-                return {
+                const authInfo = {
                     id: payload.sub,
                     name: payload.name,
                     email: payload.email,
                     picture: payload.picture,
                     tokens,
                     provider: 'google',
+                };
+                const userId = await monban.verifyUser(authInfo);
+                return {
+                    authInfo,
+                    userId,
                 };
             }
         }
@@ -46,20 +52,22 @@ class GoogleProvider extends main_1.Provider {
         }
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleSignIn(req, endpoint, monban) {
+    async handleRequest(req, endpoint, monban) {
         const app = new hono_1.Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
-        app.get('/', async (c) => {
+        app.get('/signin', async (c) => {
             const authUrl = this.getAuthUrl(callbackUrl);
             return c.redirect(authUrl);
         });
         app.get('/callback', async (c) => {
-            const accountInfo = await this.authenticate(c.req.raw, callbackUrl);
-            if (accountInfo === undefined) {
-                return c.redirect(endpoint);
+            const auth = await this.authenticate(c.req.raw, callbackUrl, monban);
+            if (auth === undefined) {
+                return c.redirect(`${endpoint}/signin`);
             }
-            const user = await monban.createUser(accountInfo);
-            const session = await monban.createSession(user, accountInfo);
+            if (auth.userId === undefined) {
+                auth.userId = await monban.createAccount(auth.authInfo);
+            }
+            const session = await monban.createSession(auth.userId, auth.authInfo);
             const setCookie = await monban.getSetCookie(session);
             c.header('set-cookie', setCookie);
             return c.redirect('/');

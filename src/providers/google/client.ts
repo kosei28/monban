@@ -1,7 +1,7 @@
-import { ProviderClient } from '../../client';
+import { ProviderClient, ProviderClientOptions } from '../../client';
 
 export class GoogleClient extends ProviderClient {
-    async signIn(endpoint: string) {
-        location.href = `${endpoint}/signin/google`;
+    async signIn(options: ProviderClientOptions) {
+        location.href = `${options.endpoint}/providers/google/signin`;
     }
 }

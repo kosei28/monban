@@ -2,7 +2,7 @@ import { Auth, google } from 'googleapis';
 import { Hono } from 'hono';
 import { Monban, Provider } from '../../main';
 
-type GoogleAccountInfo = {
+type GoogleAuthInfo = {
     id: string;
     name: string;
     email: string;
@@ -11,7 +11,7 @@ type GoogleAccountInfo = {
     provider: 'google';
 };
 
-export class GoogleProvider extends Provider<GoogleAccountInfo> {
+export class GoogleProvider extends Provider<GoogleAuthInfo> {
     protected clientId: string;
     protected clientSecret: string;
 
@@ -32,7 +32,8 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
         return url;
     }
 
-    async authenticate(req: Request, callbackUrl: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async authenticate(req: Request, callbackUrl: string, monban: Monban<any, GoogleAuthInfo>) {
         const client = new google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
         const code = new URL(req.url).searchParams.get('code') ?? '';
 
@@ -44,14 +45,21 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
             if (payload === undefined) {
                 return undefined;
             } else {
-                return {
+                const authInfo = {
                     id: payload.sub,
                     name: payload.name,
                     email: payload.email,
                     picture: payload.picture,
                     tokens,
                     provider: 'google',
-                } as GoogleAccountInfo;
+                } as GoogleAuthInfo;
+
+                const userId = await monban.verifyUser(authInfo);
+
+                return {
+                    authInfo,
+                    userId,
+                };
             }
         } catch (e) {
             return undefined;
@@ -59,25 +67,28 @@ export class GoogleProvider extends Provider<GoogleAccountInfo> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleSignIn(req: Request, endpoint: string, monban: Monban<any, any, GoogleAccountInfo>) {
+    async handleRequest(req: Request, endpoint: string, monban: Monban<any, GoogleAuthInfo>) {
         const app = new Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
 
-        app.get('/', async (c) => {
+        app.get('/signin', async (c) => {
             const authUrl = this.getAuthUrl(callbackUrl);
 
             return c.redirect(authUrl);
         });
 
         app.get('/callback', async (c) => {
-            const accountInfo = await this.authenticate(c.req.raw, callbackUrl);
+            const auth = await this.authenticate(c.req.raw, callbackUrl, monban);
 
-            if (accountInfo === undefined) {
-                return c.redirect(endpoint);
+            if (auth === undefined) {
+                return c.redirect(`${endpoint}/signin`);
             }
 
-            const user = await monban.createUser(accountInfo);
-            const session = await monban.createSession(user, accountInfo);
+            if (auth.userId === undefined) {
+                auth.userId = await monban.createAccount(auth.authInfo);
+            }
+
+            const session = await monban.createSession(auth.userId, auth.authInfo);
 
             const setCookie = await monban.getSetCookie(session);
             c.header('set-cookie', setCookie);

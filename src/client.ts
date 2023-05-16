@@ -1,22 +1,45 @@
 import * as cookie from 'cookie';
-import { InferSessionUser, InferUser, Monban, Session } from './main';
+import { InferSessionUser, Monban, Session } from './main';
+
+export type ProviderClientOptions = {
+    endpoint: string;
+    csrfToken: string;
+};
 
 export abstract class ProviderClient {
-    abstract signIn(endpoint: string): Promise<void>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    signUp?(options: ProviderClientOptions, ...args: any): Promise<any>;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    abstract signIn(options: ProviderClientOptions, ...args: any): Promise<any>;
 }
+
+type RemoveUndefined<T> = T extends undefined ? never : T;
+
+export type ProviderClientMethods = RemoveUndefined<
+    {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        [K in keyof ProviderClient]: ProviderClient[K] extends ((...args: any) => any) | undefined ? K : never;
+    }[keyof ProviderClient]
+>;
 
 export type ProviderClients = { [key: string]: ProviderClient };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type OnSessionChangeCallback<T extends Monban<any, any, any>> = (
+export type OnSessionChangeCallback<T extends Monban<any, any>> = (
     session: Session<InferSessionUser<T>> | undefined,
 ) => void;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class MonbanClient<T extends Monban<any, any, any>, U extends ProviderClients> {
+export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients> {
     protected endpoint: string;
     protected providerClients: U;
     protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[] = [];
+
+    constructor(endpoint: string, providerClients: U) {
+        this.endpoint = endpoint;
+        this.providerClients = providerClients;
+    }
 
     protected async triggerOnSessionChange(callback?: OnSessionChangeCallback<T>) {
         const session = await this.getSession();
@@ -30,43 +53,55 @@ export class MonbanClient<T extends Monban<any, any, any>, U extends ProviderCli
         }
     }
 
-    constructor(endpoint: string, providerClients: U) {
-        this.endpoint = endpoint;
-        this.providerClients = providerClients;
-    }
-
     onSessionChange(callback: OnSessionChangeCallback<T>) {
         this.triggerOnSessionChange(callback);
         this.onSessionChangeCallbacks.push(callback);
     }
 
-    signIn = new Proxy(
-        {},
-        {
-            get: (target, provider) => {
-                if (typeof provider !== 'string') {
-                    return undefined;
-                }
+    protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V) {
+        const proxy = new Proxy(
+            {},
+            {
+                get: (target, provider) => {
+                    if (typeof provider !== 'string') {
+                        return undefined;
+                    }
 
-                const providerClient = this.providerClients[provider];
+                    const providerClient = this.providerClients[provider];
 
-                if (providerClient === undefined) {
-                    return undefined;
-                }
+                    if (providerClient === undefined) {
+                        return undefined;
+                    }
 
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                return async (...args: any[]) => {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    await (providerClient.signIn as any)(this.endpoint, ...args);
-                    await this.triggerOnSessionChange();
-                };
+                    return async (...args: any) => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const result = await (providerClient[method] as any)(
+                            {
+                                endpoint: this.endpoint,
+                                csrfToken: await this.getCsrfToken(),
+                            },
+                            ...args,
+                        );
+
+                        this.triggerOnSessionChange();
+
+                        return result;
+                    };
+                },
             },
-        },
-    ) as {
-        [key in keyof U]: U[key]['signIn'] extends (endpoint: string, ...args: infer P) => infer R
-            ? (...args: P) => R
-            : never;
-    };
+        ) as {
+            [key in keyof U]: U[key][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
+                ? (...args: P) => R
+                : never;
+        };
+
+        return proxy;
+    }
+
+    signUp = this.createProviderMethodProxy('signUp');
+
+    signIn = this.createProviderMethodProxy('signIn');
 
     async signOut() {
         await fetch(`${this.endpoint}/signout`);
@@ -80,18 +115,6 @@ export class MonbanClient<T extends Monban<any, any, any>, U extends ProviderCli
             const session = (await res.json()) as Session<InferSessionUser<T>>;
 
             return session;
-        } catch (e) {
-            return undefined;
-        }
-    }
-
-    async getUser() {
-        const res = await fetch(`${this.endpoint}/user`);
-
-        try {
-            const user = (await res.json()) as InferUser<T>;
-
-            return user;
         } catch (e) {
             return undefined;
         }

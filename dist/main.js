@@ -33,16 +33,16 @@ class Monban {
             };
         }
     }
-    async createSession(user, accountInfo) {
+    async createSession(userId, authInfo) {
         if (this.callback.createSession !== undefined) {
-            const session = await this.callback.createSession(user, accountInfo, this.maxAge);
+            const session = await this.callback.createSession(userId, authInfo, this.maxAge);
             return session;
         }
         else {
             const session = {
                 id: undefined,
                 user: {
-                    id: user.id,
+                    id: userId,
                 },
             };
             return session;
@@ -71,30 +71,23 @@ class Monban {
             await this.callback.deleteSession(session);
         }
     }
-    async createUser(accountInfo) {
-        if (this.callback.createUser !== undefined) {
-            const user = await this.callback.createUser(accountInfo);
-            return user;
+    async createAccount(authInfo) {
+        if (this.callback.createAccount !== undefined) {
+            const userId = await this.callback.createAccount(authInfo);
+            return userId;
         }
         else {
-            const user = {
-                id: (0, uuid_1.v4)(),
-            };
-            return user;
+            const userId = (0, uuid_1.v4)();
+            return userId;
         }
     }
-    async getUser(userId) {
-        if (this.callback.getUser !== undefined) {
-            const user = await this.callback.getUser(userId);
-            return user;
+    async verifyUser(authInfo) {
+        if (this.callback.verifyUser !== undefined) {
+            const userId = await this.callback.verifyUser(authInfo);
+            return userId;
         }
         else {
             return undefined;
-        }
-    }
-    async deleteUser(userId) {
-        if (this.callback.deleteUser !== undefined) {
-            await this.callback.deleteUser(userId);
         }
     }
     async createToken(session) {
@@ -186,13 +179,13 @@ class Monban {
     }
     async handleRequest(req, endpoint) {
         const app = new hono_1.Hono().basePath(endpoint);
-        app.get('/signin/:provider/*', async (c) => {
+        app.get('/providers/:provider/*', async (c) => {
             const providerName = c.req.param('provider');
             const provider = this.providers[providerName];
             if (provider === undefined) {
                 return c.json(undefined, 404);
             }
-            const res = provider.handleSignIn(c.req.raw, `${endpoint}/signin/${providerName}`, this);
+            const res = provider.handleRequest(c.req.raw, `${endpoint}/providers/${providerName}`, this);
             return res;
         });
         app.get('/signout', async (c) => {
@@ -213,17 +206,6 @@ class Monban {
             const setCookie = await this.getSetCookie(newSession);
             c.header('set-cookie', setCookie);
             return c.json(newSession);
-        });
-        app.get('/user', async (c) => {
-            const session = await this.getSession(c.req.raw);
-            if (session === undefined) {
-                return c.json(undefined);
-            }
-            const user = await this.getUser(session.user.id);
-            const newSession = await this.refreshSession(session);
-            const setCookie = await this.getSetCookie(newSession);
-            c.header('set-cookie', setCookie);
-            return c.json(user);
         });
         app.get('/csrf', async (c) => {
             const { token, setCookie } = await this.createCsrfToken();
