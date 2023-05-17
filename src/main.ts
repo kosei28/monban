@@ -7,11 +7,6 @@ export type SessionUser = {
     id: string;
 };
 
-export type Session<T extends SessionUser> = {
-    id?: string;
-    user: T;
-};
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type InferSessionUser<T> = T extends Monban<infer U, any> ? U : never;
 
@@ -41,10 +36,10 @@ export type TokenPayload<T extends SessionUser> = TokenPayloadInput<T> & {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type MonbanCallback<T extends SessionUser, U extends Providers<any>> = {
-    createSession?: (userId: string, authInfo: InferAuthInfo<U>, maxAge: number) => Promise<Session<T>>;
-    refreshSession?: (oldSession: Session<T>, maxAge: number) => Promise<Session<T>>;
-    verifySession?: (session: Session<T>) => Promise<boolean>;
-    deleteSession?: (session: Session<T>) => Promise<void>;
+    createToken?: (userId: string, authInfo: InferAuthInfo<U>, maxAge: number) => Promise<TokenPayloadInput<T>>;
+    refreshToken?: (oldPayload: TokenPayload<T>, maxAge: number) => Promise<TokenPayloadInput<T>>;
+    verifyToken?: (payload: TokenPayload<T>) => Promise<boolean>;
+    invalidateToken?: (payload: TokenPayload<T>) => Promise<void>;
     createAccount?: (authInfo: InferAuthInfo<U>) => Promise<string>;
     verifyUser?: (authInfo: InferAuthInfo<U>) => Promise<string | undefined>;
 };
@@ -87,36 +82,64 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         }
     }
 
-    async createSession(userId: string, authInfo: InferAuthInfo<U>) {
-        if (this.callback.createSession !== undefined) {
-            const session = await this.callback.createSession(userId, authInfo, this.maxAge);
+    encodeToken(payload: TokenPayloadInput<T>) {
+        const token = jwt.sign(payload, this.secret, {
+            algorithm: 'HS256',
+            expiresIn: this.maxAge,
+        });
 
-            return session;
+        return token;
+    }
+
+    decodeToken(token: string) {
+        try {
+            const payload = jwt.verify(token, this.secret, {
+                algorithms: ['HS256'],
+            }) as TokenPayload<T>;
+
+            return payload;
+        } catch (e) {
+            return undefined;
+        }
+    }
+
+    async createToken(userId: string, authInfo: InferAuthInfo<U>) {
+        if (this.callback.createToken !== undefined) {
+            const payload = await this.callback.createToken(userId, authInfo, this.maxAge);
+
+            return payload;
         } else {
-            const session = {
-                id: undefined,
+            const payload: TokenPayloadInput<T> = {
+                sub: userId,
+                sessionId: undefined,
                 user: {
                     id: userId,
-                },
-            } as Session<T>;
+                } as T,
+            };
 
-            return session;
+            return payload;
         }
     }
 
-    async refreshSession(oldSession: Session<T>) {
-        if (this.callback.refreshSession !== undefined) {
-            const session = await this.callback.refreshSession(oldSession, this.maxAge);
+    async refreshToken(oldPayload: TokenPayload<T>) {
+        if (this.callback.refreshToken !== undefined) {
+            const payload = await this.callback.refreshToken(oldPayload, this.maxAge);
 
-            return session;
+            return payload;
         } else {
-            return oldSession;
+            const payload: TokenPayloadInput<T> = {
+                sub: oldPayload.sub,
+                sessionId: oldPayload.sessionId,
+                user: oldPayload.user,
+            };
+
+            return payload;
         }
     }
 
-    async verifySession(session: Session<T>) {
-        if (this.callback.verifySession !== undefined) {
-            const verified = await this.callback.verifySession(session);
+    async verifyToken(payload: TokenPayload<T>) {
+        if (this.callback.verifyToken !== undefined) {
+            const verified = await this.callback.verifyToken(payload);
 
             return verified;
         } else {
@@ -124,9 +147,9 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         }
     }
 
-    async deleteSession(session: Session<T>) {
-        if (this.callback.deleteSession !== undefined) {
-            await this.callback.deleteSession(session);
+    async invalidateToken(payload: TokenPayload<T>) {
+        if (this.callback.invalidateToken !== undefined) {
+            await this.callback.invalidateToken(payload);
         }
     }
 
@@ -152,55 +175,15 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         }
     }
 
-    async createToken(session: Session<T>) {
-        const payload: TokenPayloadInput<T> = {
-            sub: session.user.id,
-            sessionId: session.id,
-            user: session.user,
-        };
-        const token = jwt.sign(payload, this.secret, {
-            algorithm: 'HS256',
-            expiresIn: this.maxAge,
-        });
-
-        return token;
-    }
-
-    async decodeToken(token: string) {
-        try {
-            const payload = jwt.verify(token, this.secret, {
-                algorithms: ['HS256'],
-            }) as TokenPayload<T>;
-
-            return payload;
-        } catch (e) {
-            return undefined;
-        }
-    }
-
-    async verify(payload: TokenPayloadInput<T>) {
-        const session = {
-            id: payload.sessionId,
-            user: payload.user,
-        } as Session<T>;
-
-        if (await this.verifySession(session)) {
-            return session;
-        } else {
-            return undefined;
-        }
-    }
-
-    async getSetCookie(session: Session<T> | undefined) {
+    async getTokenSetCookie(token: string | undefined) {
         let setCookie: string;
 
-        if (session === undefined) {
+        if (token === undefined) {
             setCookie = cookie.serialize('_monban_token', '', {
                 ...this.cookieOptions,
                 maxAge: 0,
             });
         } else {
-            const token = await this.createToken(session);
             setCookie = cookie.serialize('_monban_token', token, {
                 ...this.cookieOptions,
                 maxAge: this.maxAge,
@@ -211,11 +194,7 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
     }
 
     async createCsrfToken() {
-        const data = new TextEncoder().encode(`${uuidv4()}${this.secret}`);
-        const hash = await crypto.subtle.digest('SHA-256', data);
-        const token = Array.from(new Uint8Array(hash))
-            .map((v) => v.toString(16).padStart(2, '0'))
-            .join('');
+        const token = uuidv4();
         const setCookie = cookie.serialize('_monban_csrf_token', token, {
             ...this.cookieOptions,
             maxAge: undefined,
@@ -242,13 +221,11 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         } else {
             const payload = await this.decodeToken(token);
 
-            if (payload === undefined) {
-                return undefined;
+            if (payload !== undefined && (await this.verifyToken(payload))) {
+                return payload;
             }
 
-            const session = await this.verify(payload);
-
-            return session;
+            return undefined;
         }
     }
 
@@ -269,30 +246,31 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         });
 
         app.get('/signout', async (c) => {
-            const session = await this.getSession(c.req.raw);
+            const payload = await this.getSession(c.req.raw);
 
-            if (session?.id !== undefined) {
-                await this.deleteSession(session);
+            if (payload?.sessionId !== undefined) {
+                await this.invalidateToken(payload);
             }
 
-            const setCookie = await this.getSetCookie(undefined);
+            const setCookie = await this.getTokenSetCookie(undefined);
             c.header('set-cookie', setCookie);
 
             return c.json(undefined);
         });
 
         app.get('/session', async (c) => {
-            const session = await this.getSession(c.req.raw);
+            const payload = await this.getSession(c.req.raw);
 
-            if (session === undefined) {
+            if (payload === undefined) {
                 return c.json(undefined);
             }
 
-            const newSession = await this.refreshSession(session);
-            const setCookie = await this.getSetCookie(newSession);
+            const newPayload = await this.refreshToken(payload);
+            const token = this.encodeToken(newPayload);
+            const setCookie = await this.getTokenSetCookie(token);
             c.header('set-cookie', setCookie);
 
-            return c.json(newSession);
+            return c.json(newPayload);
         });
 
         app.get('/csrf', async (c) => {

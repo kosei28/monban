@@ -1,4 +1,4 @@
-import { InferSessionUser, Monban, Session } from './main';
+import { InferSessionUser, Monban, TokenPayloadInput } from './main';
 import { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 export type ProviderClientOptions = {
     endpoint: string;
@@ -12,7 +12,7 @@ export type ProviderClientMethods = KeyOfSpecificTypeValue<ProviderClient, ((...
 export type ProviderClients<T extends ProviderClient> = {
     [key: string]: T;
 };
-export type OnSessionChangeCallback<T extends Monban<any, any>> = (session: Session<InferSessionUser<T>> | undefined) => void;
+export type OnSessionChangeCallback<T extends Monban<any, any>> = (session: TokenPayloadInput<InferSessionUser<T>> | undefined) => void;
 export declare class MonbanClient<T extends Monban<any, any>, U extends ProviderClients<any>> {
     protected endpoint: string;
     protected providerClients: U;
@@ -24,6 +24,6 @@ export declare class MonbanClient<T extends Monban<any, any>, U extends Provider
     signUp: OmitBySpecificTypeValue<{ [K in keyof U]: U[K]["signUp"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
     signIn: OmitBySpecificTypeValue<{ [K in keyof U]: U[K]["signIn"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
     signOut(): Promise<void>;
-    getSession(): Promise<Session<InferSessionUser<T>> | undefined>;
+    getSession(): Promise<TokenPayloadInput<InferSessionUser<T>> | undefined>;
     getCsrfToken(): Promise<string>;
 }

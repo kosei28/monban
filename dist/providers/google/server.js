@@ -67,8 +67,9 @@ class GoogleProvider extends main_1.Provider {
             if (auth.userId === undefined) {
                 auth.userId = await monban.createAccount(auth.authInfo);
             }
-            const session = await monban.createSession(auth.userId, auth.authInfo);
-            const setCookie = await monban.getSetCookie(session);
+            const payload = await monban.createToken(auth.userId, auth.authInfo);
+            const token = monban.encodeToken(payload);
+            const setCookie = await monban.getTokenSetCookie(token);
             c.header('set-cookie', setCookie);
             return c.redirect('/');
         });

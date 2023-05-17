@@ -1,5 +1,5 @@
 import * as cookie from 'cookie';
-import { InferSessionUser, Monban, Session } from './main';
+import { InferSessionUser, Monban, TokenPayloadInput } from './main';
 import { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 
 export type ProviderClientOptions = {
@@ -22,7 +22,7 @@ export type ProviderClients<T extends ProviderClient> = { [key: string]: T };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type OnSessionChangeCallback<T extends Monban<any, any>> = (
-    session: Session<InferSessionUser<T>> | undefined,
+    session: TokenPayloadInput<InferSessionUser<T>> | undefined,
 ) => void;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -110,7 +110,7 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients<
         const res = await fetch(`${this.endpoint}/session`);
 
         try {
-            const session = (await res.json()) as Session<InferSessionUser<T>>;
+            const session = (await res.json()) as TokenPayloadInput<InferSessionUser<T>>;
 
             return session;
         } catch (e) {

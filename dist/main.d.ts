@@ -2,10 +2,6 @@ import * as cookie from 'cookie';
 export type SessionUser = {
     id: string;
 };
-export type Session<T extends SessionUser> = {
-    id?: string;
-    user: T;
-};
 export type InferSessionUser<T> = T extends Monban<infer U, any> ? U : never;
 export type AuthInfo = {
     provider: string;
@@ -27,10 +23,10 @@ export type TokenPayload<T extends SessionUser> = TokenPayloadInput<T> & {
     exp: number;
 };
 export type MonbanCallback<T extends SessionUser, U extends Providers<any>> = {
-    createSession?: (userId: string, authInfo: InferAuthInfo<U>, maxAge: number) => Promise<Session<T>>;
-    refreshSession?: (oldSession: Session<T>, maxAge: number) => Promise<Session<T>>;
-    verifySession?: (session: Session<T>) => Promise<boolean>;
-    deleteSession?: (session: Session<T>) => Promise<void>;
+    createToken?: (userId: string, authInfo: InferAuthInfo<U>, maxAge: number) => Promise<TokenPayloadInput<T>>;
+    refreshToken?: (oldPayload: TokenPayload<T>, maxAge: number) => Promise<TokenPayloadInput<T>>;
+    verifyToken?: (payload: TokenPayload<T>) => Promise<boolean>;
+    invalidateToken?: (payload: TokenPayload<T>) => Promise<void>;
     createAccount?: (authInfo: InferAuthInfo<U>) => Promise<string>;
     verifyUser?: (authInfo: InferAuthInfo<U>) => Promise<string | undefined>;
 };
@@ -49,20 +45,19 @@ export declare class Monban<T extends SessionUser, U extends Providers<any>> {
     protected cookieOptions: cookie.CookieSerializeOptions;
     protected callback: MonbanCallback<T, U>;
     constructor(providers: U, options: MonbanOptions<T, U>);
-    createSession(userId: string, authInfo: InferAuthInfo<U>): Promise<Session<T>>;
-    refreshSession(oldSession: Session<T>): Promise<Session<T>>;
-    verifySession(session: Session<T>): Promise<boolean>;
-    deleteSession(session: Session<T>): Promise<void>;
+    encodeToken(payload: TokenPayloadInput<T>): string;
+    decodeToken(token: string): TokenPayload<T> | undefined;
+    createToken(userId: string, authInfo: InferAuthInfo<U>): Promise<TokenPayloadInput<T>>;
+    refreshToken(oldPayload: TokenPayload<T>): Promise<TokenPayloadInput<T>>;
+    verifyToken(payload: TokenPayload<T>): Promise<boolean>;
+    invalidateToken(payload: TokenPayload<T>): Promise<void>;
     createAccount(authInfo: InferAuthInfo<U>): Promise<string>;
     verifyUser(authInfo: InferAuthInfo<U>): Promise<string | undefined>;
-    createToken(session: Session<T>): Promise<string>;
-    decodeToken(token: string): Promise<TokenPayload<T> | undefined>;
-    verify(payload: TokenPayloadInput<T>): Promise<Session<T> | undefined>;
-    getSetCookie(session: Session<T> | undefined): Promise<string>;
+    getTokenSetCookie(token: string | undefined): Promise<string>;
     createCsrfToken(): Promise<{
         token: string;
         setCookie: string;
     }>;
-    getSession(req: Request): Promise<Session<T> | undefined>;
+    getSession(req: Request): Promise<TokenPayload<T> | undefined>;
     handleRequest(req: Request, endpoint: string): Promise<Response>;
 }
