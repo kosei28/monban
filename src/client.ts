@@ -18,7 +18,7 @@ export abstract class ProviderClient {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ProviderClientMethods = KeyOfSpecificTypeValue<ProviderClient, ((...args: any) => any) | undefined>;
 
-export type ProviderClients<T> = { [K in keyof T]: T[K] extends ProviderClient ? T[K] : never };
+export type ProviderClients = { [key: string]: ProviderClient };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type OnSessionChangeCallback<T extends Monban<any, any>> = (
@@ -26,12 +26,12 @@ export type OnSessionChangeCallback<T extends Monban<any, any>> = (
 ) => void;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class MonbanClient<T extends Monban<any, any>, U = unknown> {
+export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients> {
     protected endpoint: string;
-    protected providerClients: ProviderClients<U>;
+    protected providerClients: U;
     protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[] = [];
 
-    constructor(endpoint: string, providerClients: ProviderClients<U>) {
+    constructor(endpoint: string, providerClients: U) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
     }
@@ -62,7 +62,7 @@ export class MonbanClient<T extends Monban<any, any>, U = unknown> {
                         return undefined;
                     }
 
-                    const providerClient = this.providerClients[provider as keyof U];
+                    const providerClient = this.providerClients[provider];
 
                     if (providerClient === undefined) {
                         return undefined;
@@ -87,10 +87,7 @@ export class MonbanClient<T extends Monban<any, any>, U = unknown> {
             },
         ) as OmitBySpecificTypeValue<
             {
-                [K in keyof ProviderClients<U>]: ProviderClients<U>[K][V] extends (
-                    options: ProviderClientOptions,
-                    ...args: infer P
-                ) => infer R
+                [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
                     ? (...args: P) => R
                     : undefined;
             },
