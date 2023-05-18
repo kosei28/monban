@@ -2,10 +2,10 @@ import { ProviderClient, ProviderClientOptions } from '../../client';
 
 export class GoogleClient extends ProviderClient {
     async signIn(options: ProviderClientOptions, redirectUrl?: string) {
-        let url = `${options.endpoint}/providers/google/signin`;
+        let url = `${options.endpoint}/providers/google/signin?location=${location.href}`;
 
         if (redirectUrl !== undefined) {
-            url += `?redirect=${redirectUrl}`;
+            url += `&redirect=${redirectUrl}`;
         }
 
         location.href = url;

@@ -59,7 +59,8 @@ class GoogleProvider extends main_1.Provider {
         const app = new hono_1.Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
         app.get('/signin', async (c) => {
-            const redirectUrl = c.req.query('redirect') ?? c.req.url;
+            const location = c.req.query('location') ?? new URL(c.req.url).origin;
+            const redirectUrl = c.req.query('redirect') ?? location;
             const authUrl = this.getAuthUrl(callbackUrl, redirectUrl);
             return c.redirect(authUrl);
         });
@@ -79,10 +80,10 @@ class GoogleProvider extends main_1.Provider {
             try {
                 const authStateStr = c.req.query('state') ?? '';
                 const authState = JSON.parse(decodeURIComponent(authStateStr));
-                redirectUrl = authState.redirect ?? c.req.url;
+                redirectUrl = authState.redirect ?? new URL(c.req.url).origin;
             }
             catch (e) {
-                redirectUrl = c.req.url;
+                redirectUrl = new URL(c.req.url).origin;
             }
             return c.redirect(redirectUrl);
         });
