@@ -3,6 +3,7 @@ import { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 export type ProviderClientOptions = {
     endpoint: string;
     csrfToken: string;
+    provider: string;
 };
 export declare abstract class ProviderClient {
     signUp?(options: ProviderClientOptions, ...args: any): Promise<any>;

@@ -10,18 +10,18 @@ export type SessionUser = {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type InferSessionUser<T> = T extends Monban<infer U, any> ? U : never;
 
-export type AuthInfo = {
+export type Profile = {
     provider: string;
 };
 
-export abstract class Provider<T extends AuthInfo> {
+export abstract class Provider<T extends Profile> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     abstract handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<T>>): Promise<Response>;
 }
 
-export type Providers<T extends AuthInfo> = { [name: string]: Provider<T> };
+export type Providers<T extends Profile> = { [name: string]: Provider<T> };
 
-export type InferAuthInfo<T> = T extends Providers<infer U> ? U : never;
+export type InferProfile<T> = T extends Providers<infer U> ? U : never;
 
 export type TokenPayloadInput<T extends SessionUser> = {
     sub: string;
@@ -36,12 +36,12 @@ export type TokenPayload<T extends SessionUser> = TokenPayloadInput<T> & {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type MonbanCallback<T extends SessionUser, U extends Providers<any>> = {
-    createToken?: (userId: string, authInfo: InferAuthInfo<U>, maxAge: number) => Promise<TokenPayloadInput<T>>;
+    createToken?: (userId: string, profile: InferProfile<U>, maxAge: number) => Promise<TokenPayloadInput<T>>;
     refreshToken?: (oldPayload: TokenPayload<T>, maxAge: number) => Promise<TokenPayloadInput<T>>;
     verifyToken?: (payload: TokenPayload<T>) => Promise<boolean>;
     invalidateToken?: (payload: TokenPayload<T>) => Promise<void>;
-    createAccount?: (authInfo: InferAuthInfo<U>) => Promise<string>;
-    verifyUser?: (authInfo: InferAuthInfo<U>) => Promise<string | undefined>;
+    createAccount?: (profile: InferProfile<U>) => Promise<string>;
+    verifyUser?: (profile: InferProfile<U>) => Promise<string | undefined>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -103,9 +103,9 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         }
     }
 
-    async createToken(userId: string, authInfo: InferAuthInfo<U>) {
+    async createToken(userId: string, profile: InferProfile<U>) {
         if (this.callback.createToken !== undefined) {
-            const payload = await this.callback.createToken(userId, authInfo, this.maxAge);
+            const payload = await this.callback.createToken(userId, profile, this.maxAge);
 
             return payload;
         } else {
@@ -153,9 +153,9 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         }
     }
 
-    async createAccount(authInfo: InferAuthInfo<U>) {
+    async createAccount(profile: InferProfile<U>) {
         if (this.callback.createAccount !== undefined) {
-            const userId = await this.callback.createAccount(authInfo);
+            const userId = await this.callback.createAccount(profile);
 
             return userId;
         } else {
@@ -165,9 +165,9 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         }
     }
 
-    async verifyUser(authInfo: InferAuthInfo<U>) {
+    async verifyUser(profile: InferProfile<U>) {
         if (this.callback.verifyUser !== undefined) {
-            const userId = await this.callback.verifyUser(authInfo);
+            const userId = await this.callback.verifyUser(profile);
 
             return userId;
         } else {

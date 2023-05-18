@@ -11,15 +11,15 @@ class PasswordProvider extends main_1.Provider {
             if (email === undefined || password === undefined) {
                 return undefined;
             }
-            const authInfo = {
+            const profile = {
                 id: email,
                 email: email,
                 password: password,
                 provider: 'password',
             };
-            const userId = await monban.verifyUser(authInfo);
+            const userId = await monban.verifyUser(profile);
             return {
-                authInfo,
+                profile,
                 userId,
             };
         }
@@ -36,8 +36,8 @@ class PasswordProvider extends main_1.Provider {
                 c.status(400);
                 return c.json(undefined);
             }
-            auth.userId = await monban.createAccount(auth.authInfo);
-            const payload = await monban.createToken(auth.userId, auth.authInfo);
+            auth.userId = await monban.createAccount(auth.profile);
+            const payload = await monban.createToken(auth.userId, auth.profile);
             const token = monban.encodeToken(payload);
             const setCookie = await monban.getTokenSetCookie(token);
             c.header('set-cookie', setCookie);
@@ -49,7 +49,7 @@ class PasswordProvider extends main_1.Provider {
                 c.status(401);
                 return c.json(undefined);
             }
-            const payload = await monban.createToken(auth.userId, auth.authInfo);
+            const payload = await monban.createToken(auth.userId, auth.profile);
             const token = monban.encodeToken(payload);
             const setCookie = await monban.getTokenSetCookie(token);
             c.header('set-cookie', setCookie);

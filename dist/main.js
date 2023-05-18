@@ -52,9 +52,9 @@ class Monban {
             return undefined;
         }
     }
-    async createToken(userId, authInfo) {
+    async createToken(userId, profile) {
         if (this.callback.createToken !== undefined) {
-            const payload = await this.callback.createToken(userId, authInfo, this.maxAge);
+            const payload = await this.callback.createToken(userId, profile, this.maxAge);
             return payload;
         }
         else {
@@ -96,9 +96,9 @@ class Monban {
             await this.callback.invalidateToken(payload);
         }
     }
-    async createAccount(authInfo) {
+    async createAccount(profile) {
         if (this.callback.createAccount !== undefined) {
-            const userId = await this.callback.createAccount(authInfo);
+            const userId = await this.callback.createAccount(profile);
             return userId;
         }
         else {
@@ -106,9 +106,9 @@ class Monban {
             return userId;
         }
     }
-    async verifyUser(authInfo) {
+    async verifyUser(profile) {
         if (this.callback.verifyUser !== undefined) {
-            const userId = await this.callback.verifyUser(authInfo);
+            const userId = await this.callback.verifyUser(profile);
             return userId;
         }
         else {

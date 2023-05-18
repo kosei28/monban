@@ -1,94 +1,37 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GoogleProvider = void 0;
-const googleapis_1 = require("googleapis");
-const hono_1 = require("hono");
-const main_1 = require("../../main");
-class GoogleProvider extends main_1.Provider {
-    clientId;
-    clientSecret;
-    constructor(option) {
-        super();
-        this.clientId = option.clientId;
-        this.clientSecret = option.clientSecret;
-    }
-    getAuthUrl(callbackUrl, redirectUrl) {
-        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
-        const url = client.generateAuthUrl({
-            access_type: 'online',
-            scope: ['profile', 'email'],
-            state: encodeURIComponent(JSON.stringify({
-                redirect: redirectUrl,
-            })),
+const server_1 = require("../oauth2/server");
+class GoogleProvider extends server_1.OAuth2Provider {
+    constructor(options) {
+        super({
+            authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+            tokenUrl: 'https://oauth2.googleapis.com/token',
+            scope: 'profile email',
+            clientId: options.clientId,
+            clientSecret: options.clientSecret,
+            getProfile: async (tokens) => {
+                try {
+                    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                        headers: {
+                            Authorization: `Bearer ${tokens.access_token}`,
+                        },
+                    });
+                    const raw = await res.json();
+                    const profile = {
+                        id: raw.sub,
+                        name: raw.name,
+                        email: raw.email,
+                        picture: raw.picture,
+                        provider: 'google',
+                    };
+                    return profile;
+                }
+                catch (e) {
+                    return undefined;
+                }
+            },
         });
-        return url;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async authenticate(req, callbackUrl, monban) {
-        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
-        const code = new URL(req.url).searchParams.get('code') ?? '';
-        try {
-            const { tokens } = await client.getToken(code);
-            const ticket = await client.verifyIdToken({ idToken: tokens.id_token ?? '' });
-            const payload = ticket.getPayload();
-            if (payload === undefined) {
-                return undefined;
-            }
-            else {
-                const authInfo = {
-                    id: payload.sub,
-                    name: payload.name,
-                    email: payload.email,
-                    picture: payload.picture,
-                    tokens,
-                    provider: 'google',
-                };
-                const userId = await monban.verifyUser(authInfo);
-                return {
-                    authInfo,
-                    userId,
-                };
-            }
-        }
-        catch (e) {
-            return undefined;
-        }
-    }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleRequest(req, endpoint, monban) {
-        const app = new hono_1.Hono().basePath(endpoint);
-        const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
-        app.get('/signin', async (c) => {
-            const location = c.req.query('location') ?? new URL(c.req.url).origin;
-            const redirectUrl = c.req.query('redirect') ?? location;
-            const authUrl = this.getAuthUrl(callbackUrl, redirectUrl);
-            return c.redirect(authUrl);
-        });
-        app.get('/callback', async (c) => {
-            const auth = await this.authenticate(c.req.raw, callbackUrl, monban);
-            if (auth === undefined) {
-                return c.redirect(`${endpoint}/signin`);
-            }
-            if (auth.userId === undefined) {
-                auth.userId = await monban.createAccount(auth.authInfo);
-            }
-            const payload = await monban.createToken(auth.userId, auth.authInfo);
-            const token = monban.encodeToken(payload);
-            const setCookie = await monban.getTokenSetCookie(token);
-            c.header('set-cookie', setCookie);
-            let redirectUrl;
-            try {
-                const authStateStr = c.req.query('state') ?? '';
-                const authState = JSON.parse(decodeURIComponent(authStateStr));
-                redirectUrl = authState.redirect ?? new URL(c.req.url).origin;
-            }
-            catch (e) {
-                redirectUrl = new URL(c.req.url).origin;
-            }
-            return c.redirect(redirectUrl);
-        });
-        const res = await app.fetch(req);
-        return res;
     }
 }
 exports.GoogleProvider = GoogleProvider;

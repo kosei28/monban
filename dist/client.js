@@ -45,6 +45,7 @@ class MonbanClient {
                     const result = await providerClient[method]({
                         endpoint: this.endpoint,
                         csrfToken: await this.getCsrfToken(),
+                        provider,
                     }, ...args);
                     this.triggerOnSessionChange();
                     return result;

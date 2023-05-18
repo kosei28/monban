@@ -5,7 +5,7 @@ const client_1 = require("../../client");
 class PasswordClient extends client_1.ProviderClient {
     async signUp(options, email, password) {
         try {
-            await fetch(`${options.endpoint}/providers/password/signup`, {
+            await fetch(`${options.endpoint}/providers/${options.provider}/signup`, {
                 method: 'post',
                 headers: {
                     'content-type': 'application/json',
@@ -24,7 +24,7 @@ class PasswordClient extends client_1.ProviderClient {
     }
     async signIn(options, email, password) {
         try {
-            await fetch(`${options.endpoint}/providers/password/signin`, {
+            await fetch(`${options.endpoint}/providers/${options.provider}/signin`, {
                 method: 'post',
                 headers: {
                     'content-type': 'application/json',

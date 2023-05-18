@@ -5,6 +5,7 @@ import { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 export type ProviderClientOptions = {
     endpoint: string;
     csrfToken: string;
+    provider: string;
 };
 
 export abstract class ProviderClient {
@@ -75,7 +76,8 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients>
                             {
                                 endpoint: this.endpoint,
                                 csrfToken: await this.getCsrfToken(),
-                            },
+                                provider,
+                            } as ProviderClientOptions,
                             ...args,
                         );
 

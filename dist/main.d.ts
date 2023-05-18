@@ -3,16 +3,16 @@ export type SessionUser = {
     id: string;
 };
 export type InferSessionUser<T> = T extends Monban<infer U, any> ? U : never;
-export type AuthInfo = {
+export type Profile = {
     provider: string;
 };
-export declare abstract class Provider<T extends AuthInfo> {
+export declare abstract class Provider<T extends Profile> {
     abstract handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<T>>): Promise<Response>;
 }
-export type Providers<T extends AuthInfo> = {
+export type Providers<T extends Profile> = {
     [name: string]: Provider<T>;
 };
-export type InferAuthInfo<T> = T extends Providers<infer U> ? U : never;
+export type InferProfile<T> = T extends Providers<infer U> ? U : never;
 export type TokenPayloadInput<T extends SessionUser> = {
     sub: string;
     sessionId?: string;
@@ -23,12 +23,12 @@ export type TokenPayload<T extends SessionUser> = TokenPayloadInput<T> & {
     exp: number;
 };
 export type MonbanCallback<T extends SessionUser, U extends Providers<any>> = {
-    createToken?: (userId: string, authInfo: InferAuthInfo<U>, maxAge: number) => Promise<TokenPayloadInput<T>>;
+    createToken?: (userId: string, profile: InferProfile<U>, maxAge: number) => Promise<TokenPayloadInput<T>>;
     refreshToken?: (oldPayload: TokenPayload<T>, maxAge: number) => Promise<TokenPayloadInput<T>>;
     verifyToken?: (payload: TokenPayload<T>) => Promise<boolean>;
     invalidateToken?: (payload: TokenPayload<T>) => Promise<void>;
-    createAccount?: (authInfo: InferAuthInfo<U>) => Promise<string>;
-    verifyUser?: (authInfo: InferAuthInfo<U>) => Promise<string | undefined>;
+    createAccount?: (profile: InferProfile<U>) => Promise<string>;
+    verifyUser?: (profile: InferProfile<U>) => Promise<string | undefined>;
 };
 export type MonbanOptions<T extends SessionUser, U extends Providers<any>> = {
     secret: string;
@@ -47,12 +47,12 @@ export declare class Monban<T extends SessionUser, U extends Providers<any>> {
     constructor(providers: U, options: MonbanOptions<T, U>);
     encodeToken(payload: TokenPayloadInput<T>): string;
     decodeToken(token: string): TokenPayload<T> | undefined;
-    createToken(userId: string, authInfo: InferAuthInfo<U>): Promise<TokenPayloadInput<T>>;
+    createToken(userId: string, profile: InferProfile<U>): Promise<TokenPayloadInput<T>>;
     refreshToken(oldPayload: TokenPayload<T>): Promise<TokenPayloadInput<T>>;
     verifyToken(payload: TokenPayload<T>): Promise<boolean>;
     invalidateToken(payload: TokenPayload<T>): Promise<void>;
-    createAccount(authInfo: InferAuthInfo<U>): Promise<string>;
-    verifyUser(authInfo: InferAuthInfo<U>): Promise<string | undefined>;
+    createAccount(profile: InferProfile<U>): Promise<string>;
+    verifyUser(profile: InferProfile<U>): Promise<string | undefined>;
     getTokenSetCookie(token: string | undefined): Promise<string>;
     createCsrfToken(): Promise<{
         token: string;

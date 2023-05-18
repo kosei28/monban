@@ -3,7 +3,7 @@ import { ProviderClient, ProviderClientOptions } from '../../client';
 export class PasswordClient extends ProviderClient {
     async signUp(options: ProviderClientOptions, email: string, password: string) {
         try {
-            await fetch(`${options.endpoint}/providers/password/signup`, {
+            await fetch(`${options.endpoint}/providers/${options.provider}/signup`, {
                 method: 'post',
                 headers: {
                     'content-type': 'application/json',
@@ -23,7 +23,7 @@ export class PasswordClient extends ProviderClient {
 
     async signIn(options: ProviderClientOptions, email: string, password: string) {
         try {
-            await fetch(`${options.endpoint}/providers/password/signin`, {
+            await fetch(`${options.endpoint}/providers/${options.provider}/signin`, {
                 method: 'post',
                 headers: {
                     'content-type': 'application/json',
