@@ -12,10 +12,10 @@ class PasswordProvider extends main_1.Provider {
                 return undefined;
             }
             const profile = {
+                provider: 'password',
                 id: email,
                 email: email,
                 password: password,
-                provider: 'password',
             };
             const userId = await monban.verifyUser(profile);
             return {

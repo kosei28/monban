@@ -11,9 +11,9 @@ export type GoogleProfile = {
 export type GoogleTokens = {
     access_token?: string;
     refresh_token?: string;
+    id_token?: string;
     expiry_date?: number;
     token_type?: string;
-    id_token?: string;
     scope?: string;
 };
 
@@ -35,11 +35,11 @@ export class GoogleProvider extends OAuth2Provider<GoogleProfile, GoogleTokens> 
                     const raw = await res.json();
 
                     const profile = {
+                        provider: 'google',
                         id: raw.sub,
                         name: raw.name,
                         email: raw.email,
                         picture: raw.picture,
-                        provider: 'google',
                     } as GoogleProfile;
 
                     return profile;

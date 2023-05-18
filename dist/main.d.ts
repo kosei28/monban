@@ -42,8 +42,8 @@ export declare class Monban<T extends SessionUser, U extends Providers<any>> {
     protected secret: string;
     protected maxAge: number;
     protected csrf: boolean;
-    protected cookieOptions: cookie.CookieSerializeOptions;
     protected callback: MonbanCallback<T, U>;
+    cookieOptions: cookie.CookieSerializeOptions;
     constructor(providers: U, options: MonbanOptions<T, U>);
     encodeToken(payload: TokenPayloadInput<T>): string;
     decodeToken(token: string): TokenPayload<T> | undefined;

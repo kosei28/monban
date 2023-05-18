@@ -19,11 +19,11 @@ class GoogleProvider extends server_1.OAuth2Provider {
                     });
                     const raw = await res.json();
                     const profile = {
+                        provider: 'google',
                         id: raw.sub,
                         name: raw.name,
                         email: raw.email,
                         picture: raw.picture,
-                        provider: 'google',
                     };
                     return profile;
                 }

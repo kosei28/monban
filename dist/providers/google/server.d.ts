@@ -9,9 +9,9 @@ export type GoogleProfile = {
 export type GoogleTokens = {
     access_token?: string;
     refresh_token?: string;
+    id_token?: string;
     expiry_date?: number;
     token_type?: string;
-    id_token?: string;
     scope?: string;
 };
 export declare class GoogleProvider extends OAuth2Provider<GoogleProfile, GoogleTokens> {

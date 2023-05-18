@@ -2,10 +2,10 @@ import { Hono } from 'hono';
 import { Monban, Provider, Providers } from '../../main';
 
 export type PasswordProfile = {
+    provider: 'password';
     id: string;
     email: string;
     password: string;
-    provider: 'password';
 };
 
 export class PasswordProvider extends Provider<PasswordProfile> {
@@ -19,10 +19,10 @@ export class PasswordProvider extends Provider<PasswordProfile> {
             }
 
             const profile = {
+                provider: 'password',
                 id: email,
                 email: email,
                 password: password,
-                provider: 'password',
             } as PasswordProfile;
 
             const userId = await monban.verifyUser(profile);

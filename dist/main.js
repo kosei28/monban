@@ -14,13 +14,13 @@ class Monban {
     secret;
     maxAge = 60 * 60;
     csrf = true;
+    callback = {};
     cookieOptions = {
         path: '/',
         sameSite: 'lax',
         secure: true,
         httpOnly: true,
     };
-    callback = {};
     constructor(providers, options) {
         this.providers = providers;
         this.secret = options.secret;

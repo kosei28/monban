@@ -18,7 +18,7 @@ export declare class OAuth2Provider<T extends Profile, U extends OAuth2Tokens> e
         clientSecret: string;
         getProfile: (tokens: U) => Promise<T | undefined>;
     });
-    getAuthUrl(callbackUrl: string, redirectUrl: string): string;
+    getAuthUrl(callbackUrl: string, redirectUrl: string, stateId: string): string;
     authenticate(req: Request, callbackUrl: string, monban: Monban<any, Providers<T>>): Promise<{
         profile: T;
         userId: string | undefined;

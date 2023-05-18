@@ -59,13 +59,14 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
     protected secret: string;
     protected maxAge = 60 * 60;
     protected csrf = true;
-    protected cookieOptions: cookie.CookieSerializeOptions = {
+    protected callback: MonbanCallback<T, U> = {};
+
+    cookieOptions: cookie.CookieSerializeOptions = {
         path: '/',
         sameSite: 'lax',
         secure: true,
         httpOnly: true,
     };
-    protected callback: MonbanCallback<T, U> = {};
 
     constructor(providers: U, options: MonbanOptions<T, U>) {
         this.providers = providers;
