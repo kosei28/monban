@@ -22,8 +22,12 @@ export class GoogleProvider extends Provider<GoogleAuthInfo> {
         this.clientSecret = option.clientSecret;
     }
 
-    getAuthUrl(callbackUrl: string) {
-        const client = new google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
+    getAuthUrl(callbackUrl: string, redirectUrl: string) {
+        const client = new google.auth.OAuth2(
+            this.clientId,
+            this.clientSecret,
+            `${callbackUrl}?redirect=${redirectUrl}`,
+        );
         const url = client.generateAuthUrl({
             access_type: 'online',
             scope: ['profile', 'email'],
@@ -72,7 +76,8 @@ export class GoogleProvider extends Provider<GoogleAuthInfo> {
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
 
         app.get('/signin', async (c) => {
-            const authUrl = this.getAuthUrl(callbackUrl);
+            const redirectUrl = c.req.query('redirect') ?? c.req.url;
+            const authUrl = this.getAuthUrl(callbackUrl, redirectUrl);
 
             return c.redirect(authUrl);
         });
@@ -93,7 +98,9 @@ export class GoogleProvider extends Provider<GoogleAuthInfo> {
             const setCookie = await monban.getTokenSetCookie(token);
             c.header('set-cookie', setCookie);
 
-            return c.redirect('/');
+            const redirectUrl = c.req.query('redirect') ?? c.req.url;
+
+            return c.redirect(redirectUrl);
         });
 
         const res = await app.fetch(req);

@@ -58,6 +58,6 @@ export declare class Monban<T extends SessionUser, U extends Providers<any>> {
         token: string;
         setCookie: string;
     }>;
-    getSession(req: Request): Promise<TokenPayload<T> | undefined>;
+    isAuthenticated(req: Request): Promise<TokenPayload<T> | undefined>;
     handleRequest(req: Request, endpoint: string): Promise<Response>;
 }

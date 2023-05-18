@@ -143,7 +143,7 @@ class Monban {
             setCookie,
         };
     }
-    async getSession(req) {
+    async isAuthenticated(req) {
         const csrfTokenHeader = req.headers.get('x-monban-csrf-token');
         const cookieHeader = req.headers.get('cookie');
         const { _monban_token: token, _monban_csrf_token: csrfToken } = cookie.parse(cookieHeader ?? '');
@@ -173,7 +173,7 @@ class Monban {
             return res;
         });
         app.get('/signout', async (c) => {
-            const payload = await this.getSession(c.req.raw);
+            const payload = await this.isAuthenticated(c.req.raw);
             if (payload?.sessionId !== undefined) {
                 await this.invalidateToken(payload);
             }
@@ -182,7 +182,7 @@ class Monban {
             return c.json(undefined);
         });
         app.get('/session', async (c) => {
-            const payload = await this.getSession(c.req.raw);
+            const payload = await this.isAuthenticated(c.req.raw);
             if (payload === undefined) {
                 return c.json(undefined);
             }

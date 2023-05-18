@@ -12,8 +12,8 @@ class GoogleProvider extends main_1.Provider {
         this.clientId = option.clientId;
         this.clientSecret = option.clientSecret;
     }
-    getAuthUrl(callbackUrl) {
-        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
+    getAuthUrl(callbackUrl, redirectUrl) {
+        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, `${callbackUrl}?redirect=${redirectUrl}`);
         const url = client.generateAuthUrl({
             access_type: 'online',
             scope: ['profile', 'email'],
@@ -56,7 +56,8 @@ class GoogleProvider extends main_1.Provider {
         const app = new hono_1.Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
         app.get('/signin', async (c) => {
-            const authUrl = this.getAuthUrl(callbackUrl);
+            const redirectUrl = c.req.query('redirect') ?? c.req.url;
+            const authUrl = this.getAuthUrl(callbackUrl, redirectUrl);
             return c.redirect(authUrl);
         });
         app.get('/callback', async (c) => {
@@ -71,7 +72,8 @@ class GoogleProvider extends main_1.Provider {
             const token = monban.encodeToken(payload);
             const setCookie = await monban.getTokenSetCookie(token);
             c.header('set-cookie', setCookie);
-            return c.redirect('/');
+            const redirectUrl = c.req.query('redirect') ?? c.req.url;
+            return c.redirect(redirectUrl);
         });
         const res = await app.fetch(req);
         return res;
