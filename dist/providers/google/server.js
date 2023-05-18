@@ -13,10 +13,13 @@ class GoogleProvider extends main_1.Provider {
         this.clientSecret = option.clientSecret;
     }
     getAuthUrl(callbackUrl, redirectUrl) {
-        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, `${callbackUrl}?redirect=${redirectUrl}`);
+        const client = new googleapis_1.google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
         const url = client.generateAuthUrl({
             access_type: 'online',
             scope: ['profile', 'email'],
+            state: encodeURIComponent(JSON.stringify({
+                redirect: redirectUrl,
+            })),
         });
         return url;
     }
@@ -72,7 +75,15 @@ class GoogleProvider extends main_1.Provider {
             const token = monban.encodeToken(payload);
             const setCookie = await monban.getTokenSetCookie(token);
             c.header('set-cookie', setCookie);
-            const redirectUrl = c.req.query('redirect') ?? c.req.url;
+            let redirectUrl;
+            try {
+                const authStateStr = c.req.query('state') ?? '';
+                const authState = JSON.parse(decodeURIComponent(authStateStr));
+                redirectUrl = authState.redirect ?? c.req.url;
+            }
+            catch (e) {
+                redirectUrl = c.req.url;
+            }
             return c.redirect(redirectUrl);
         });
         const res = await app.fetch(req);

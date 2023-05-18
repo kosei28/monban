@@ -23,14 +23,15 @@ export class GoogleProvider extends Provider<GoogleAuthInfo> {
     }
 
     getAuthUrl(callbackUrl: string, redirectUrl: string) {
-        const client = new google.auth.OAuth2(
-            this.clientId,
-            this.clientSecret,
-            `${callbackUrl}?redirect=${redirectUrl}`,
-        );
+        const client = new google.auth.OAuth2(this.clientId, this.clientSecret, callbackUrl);
         const url = client.generateAuthUrl({
             access_type: 'online',
             scope: ['profile', 'email'],
+            state: encodeURIComponent(
+                JSON.stringify({
+                    redirect: redirectUrl,
+                }),
+            ),
         });
 
         return url;
@@ -98,7 +99,15 @@ export class GoogleProvider extends Provider<GoogleAuthInfo> {
             const setCookie = await monban.getTokenSetCookie(token);
             c.header('set-cookie', setCookie);
 
-            const redirectUrl = c.req.query('redirect') ?? c.req.url;
+            let redirectUrl: string;
+
+            try {
+                const authStateStr = c.req.query('state') ?? '';
+                const authState = JSON.parse(decodeURIComponent(authStateStr));
+                redirectUrl = authState.redirect ?? c.req.url;
+            } catch (e) {
+                redirectUrl = c.req.url;
+            }
 
             return c.redirect(redirectUrl);
         });
