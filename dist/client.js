@@ -61,8 +61,8 @@ class MonbanClient {
         await this.triggerOnSessionChange();
     }
     async getSession() {
-        const res = await fetch(`${this.endpoint}/session`);
         try {
+            const res = await fetch(`${this.endpoint}/session`);
             const session = (await res.json());
             return session;
         }

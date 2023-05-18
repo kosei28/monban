@@ -184,6 +184,7 @@ class Monban {
         app.get('/session', async (c) => {
             const payload = await this.isAuthenticated(c.req.raw);
             if (payload === undefined) {
+                c.status(401);
                 return c.json(undefined);
             }
             const newPayload = await this.refreshToken(payload);

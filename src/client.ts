@@ -109,9 +109,8 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients>
     }
 
     async getSession() {
-        const res = await fetch(`${this.endpoint}/session`);
-
         try {
+            const res = await fetch(`${this.endpoint}/session`);
             const session = (await res.json()) as TokenPayloadInput<InferSessionUser<T>>;
 
             return session;

@@ -263,6 +263,8 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
             const payload = await this.isAuthenticated(c.req.raw);
 
             if (payload === undefined) {
+                c.status(401);
+
                 return c.json(undefined);
             }
 
