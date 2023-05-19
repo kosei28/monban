@@ -2,7 +2,6 @@ import * as cookie from 'cookie';
 export type SessionUser = {
     id: string;
 };
-export type InferSessionUser<T> = T extends Monban<infer U, any> ? U : never;
 export type Profile = {
     provider: string;
 };

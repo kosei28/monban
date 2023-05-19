@@ -1,5 +1,5 @@
 import * as cookie from 'cookie';
-import { InferSessionUser, Monban, TokenPayloadInput } from './main';
+import { SessionUser, TokenPayloadInput } from './main';
 import { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 
 export type ProviderClientOptions = {
@@ -22,12 +22,10 @@ export type ProviderClientMethods = KeyOfSpecificTypeValue<ProviderClient, ((...
 export type ProviderClients = { [key: string]: ProviderClient };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type OnSessionChangeCallback<T extends Monban<any, any>> = (
-    session: TokenPayloadInput<InferSessionUser<T>> | undefined,
-) => void;
+export type OnSessionChangeCallback<T extends SessionUser> = (session: TokenPayloadInput<T> | undefined) => void;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients> {
+export class MonbanClient<T extends SessionUser, U extends ProviderClients> {
     protected endpoint: string;
     protected providerClients: U;
     protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[] = [];
@@ -49,9 +47,9 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients>
         }
     }
 
-    onSessionChange(callback: OnSessionChangeCallback<T>) {
-        this.triggerOnSessionChange(callback);
+    async onSessionChange(callback: OnSessionChangeCallback<T>) {
         this.onSessionChangeCallbacks.push(callback);
+        await this.triggerOnSessionChange(callback);
     }
 
     protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V) {
@@ -81,7 +79,7 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients>
                             ...args,
                         );
 
-                        this.triggerOnSessionChange();
+                        await this.triggerOnSessionChange();
 
                         return result;
                     };
@@ -111,7 +109,7 @@ export class MonbanClient<T extends Monban<any, any>, U extends ProviderClients>
     async getSession() {
         try {
             const res = await fetch(`${this.endpoint}/session`);
-            const session = (await res.json()) as TokenPayloadInput<InferSessionUser<T>>;
+            const session = (await res.json()) as TokenPayloadInput<T>;
 
             return session;
         } catch (e) {

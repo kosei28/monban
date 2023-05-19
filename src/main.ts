@@ -7,9 +7,6 @@ export type SessionUser = {
     id: string;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type InferSessionUser<T> = T extends Monban<infer U, any> ? U : never;
-
 export type Profile = {
     provider: string;
 };
@@ -249,7 +246,7 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         app.get('/signout', async (c) => {
             const payload = await this.isAuthenticated(c.req.raw);
 
-            if (payload?.sessionId !== undefined) {
+            if (payload !== undefined) {
                 await this.invalidateToken(payload);
             }
 

@@ -174,7 +174,7 @@ class Monban {
         });
         app.get('/signout', async (c) => {
             const payload = await this.isAuthenticated(c.req.raw);
-            if (payload?.sessionId !== undefined) {
+            if (payload !== undefined) {
                 await this.invalidateToken(payload);
             }
             const setCookie = await this.getTokenSetCookie(undefined);

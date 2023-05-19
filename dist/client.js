@@ -25,9 +25,9 @@ class MonbanClient {
             });
         }
     }
-    onSessionChange(callback) {
-        this.triggerOnSessionChange(callback);
+    async onSessionChange(callback) {
         this.onSessionChangeCallbacks.push(callback);
+        await this.triggerOnSessionChange(callback);
     }
     createProviderMethodProxy(method) {
         const proxy = new Proxy({}, {
@@ -47,7 +47,7 @@ class MonbanClient {
                         csrfToken: await this.getCsrfToken(),
                         provider,
                     }, ...args);
-                    this.triggerOnSessionChange();
+                    await this.triggerOnSessionChange();
                     return result;
                 };
             },
