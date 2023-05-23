@@ -1,7 +1,7 @@
 import * as cookie from 'cookie';
 import { Hono } from 'hono';
 import { v4 as uuidv4 } from 'uuid';
-import { Monban, Profile, Provider, Providers } from '../../main';
+import { Monban, Provider, type Profile, type Providers } from '../../main';
 
 export type OAuth2Tokens = {
     access_token?: string;

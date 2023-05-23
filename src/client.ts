@@ -1,6 +1,6 @@
 import * as cookie from 'cookie';
-import { SessionUser, TokenPayloadInput } from './main';
-import { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
+import type { SessionUser, TokenPayloadInput } from './main';
+import type { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 
 export type ProviderClientOptions = {
     endpoint: string;

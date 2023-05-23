@@ -1,7 +1,7 @@
 import { ProviderClient, ProviderClientOptions } from '../../client';
 
-export class PasswordClient extends ProviderClient {
-    async signUp(options: ProviderClientOptions, email: string, password: string) {
+export class JsonClient<T> extends ProviderClient {
+    async signUp(options: ProviderClientOptions, body: T) {
         try {
             await fetch(`${options.endpoint}/providers/${options.provider}/signup`, {
                 method: 'post',
@@ -9,10 +9,7 @@ export class PasswordClient extends ProviderClient {
                     'content-type': 'application/json',
                     'x-monban-csrf-token': options.csrfToken,
                 },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
+                body: JSON.stringify(body),
             });
 
             return true;
@@ -21,7 +18,7 @@ export class PasswordClient extends ProviderClient {
         }
     }
 
-    async signIn(options: ProviderClientOptions, email: string, password: string) {
+    async signIn(options: ProviderClientOptions, body: T) {
         try {
             await fetch(`${options.endpoint}/providers/${options.provider}/signin`, {
                 method: 'post',
@@ -29,10 +26,7 @@ export class PasswordClient extends ProviderClient {
                     'content-type': 'application/json',
                     'x-monban-csrf-token': options.csrfToken,
                 },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
+                body: JSON.stringify(body),
             });
 
             return true;

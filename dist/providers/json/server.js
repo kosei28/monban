@@ -1,21 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PasswordProvider = void 0;
+exports.JsonProvider = void 0;
 const hono_1 = require("hono");
 const main_1 = require("../../main");
-class PasswordProvider extends main_1.Provider {
+class JsonProvider extends main_1.Provider {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async authenticate(req, monban) {
         try {
-            const { email, password } = await req.json();
-            if (email === undefined || password === undefined) {
-                return undefined;
-            }
             const profile = {
-                provider: 'password',
-                id: email,
-                email: email,
-                password: password,
+                provider: 'json',
+                ...(await req.json()),
             };
             const userId = await monban.verifyUser(profile);
             return {
@@ -59,5 +53,5 @@ class PasswordProvider extends main_1.Provider {
         return res;
     }
 }
-exports.PasswordProvider = PasswordProvider;
+exports.JsonProvider = JsonProvider;
 //# sourceMappingURL=server.js.map

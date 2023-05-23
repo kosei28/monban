@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PasswordClient = void 0;
+exports.JsonClient = void 0;
 const client_1 = require("../../client");
-class PasswordClient extends client_1.ProviderClient {
-    async signUp(options, email, password) {
+class JsonClient extends client_1.ProviderClient {
+    async signUp(options, body) {
         try {
             await fetch(`${options.endpoint}/providers/${options.provider}/signup`, {
                 method: 'post',
@@ -11,10 +11,7 @@ class PasswordClient extends client_1.ProviderClient {
                     'content-type': 'application/json',
                     'x-monban-csrf-token': options.csrfToken,
                 },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
+                body: JSON.stringify(body),
             });
             return true;
         }
@@ -22,7 +19,7 @@ class PasswordClient extends client_1.ProviderClient {
             return false;
         }
     }
-    async signIn(options, email, password) {
+    async signIn(options, body) {
         try {
             await fetch(`${options.endpoint}/providers/${options.provider}/signin`, {
                 method: 'post',
@@ -30,10 +27,7 @@ class PasswordClient extends client_1.ProviderClient {
                     'content-type': 'application/json',
                     'x-monban-csrf-token': options.csrfToken,
                 },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
+                body: JSON.stringify(body),
             });
             return true;
         }
@@ -42,5 +36,5 @@ class PasswordClient extends client_1.ProviderClient {
         }
     }
 }
-exports.PasswordClient = PasswordClient;
+exports.JsonClient = JsonClient;
 //# sourceMappingURL=client.js.map

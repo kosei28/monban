@@ -1,4 +1,4 @@
-import { Monban, Profile, Provider, Providers } from '../../main';
+import { Monban, Provider, type Profile, type Providers } from '../../main';
 export type OAuth2Tokens = {
     access_token?: string;
     refresh_token?: string;

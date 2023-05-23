@@ -1,4 +1,4 @@
-import { ProviderClient, ProviderClientOptions } from '../../client';
+import { ProviderClient, type ProviderClientOptions } from '../../client';
 
 export class OAuth2Client extends ProviderClient {
     async signIn(options: ProviderClientOptions, redirectUrl?: string) {

@@ -1,29 +1,18 @@
 import { Hono } from 'hono';
-import { Monban, Provider, Providers } from '../../main';
+import { Monban, Provider } from '../../main';
 
-export type PasswordProfile = {
-    provider: 'password';
-    id: string;
-    email: string;
-    password: string;
-};
+export type JsonProfile<T> = {
+    provider: 'json';
+} & T;
 
-export class PasswordProvider extends Provider<PasswordProfile> {
+export class JsonProvider<T> extends Provider<JsonProfile<T>> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async authenticate(req: Request, monban: Monban<any, Providers<PasswordProfile>>) {
+    async authenticate(req: Request, monban: Monban<any, any>) {
         try {
-            const { email, password } = await req.json();
-
-            if (email === undefined || password === undefined) {
-                return undefined;
-            }
-
             const profile = {
-                provider: 'password',
-                id: email,
-                email: email,
-                password: password,
-            } as PasswordProfile;
+                provider: 'json',
+                ...(await req.json()),
+            } as JsonProfile<T>;
 
             const userId = await monban.verifyUser(profile);
 
@@ -37,7 +26,7 @@ export class PasswordProvider extends Provider<PasswordProfile> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<PasswordProfile>>) {
+    async handleRequest(req: Request, endpoint: string, monban: Monban<any, any>) {
         const app = new Hono().basePath(endpoint);
 
         app.post('/signup', async (c) => {
