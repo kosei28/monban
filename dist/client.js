@@ -9,12 +9,10 @@ class MonbanClient {
     endpoint;
     providerClients;
     onSessionChangeCallbacks = [];
+    addedFocusEventListener = false;
     constructor(endpoint, providerClients) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
-        window.addEventListener('focus', async () => {
-            await this.triggerOnSessionChange();
-        });
     }
     async triggerOnSessionChange(callback) {
         const session = await this.getSession();
@@ -27,9 +25,19 @@ class MonbanClient {
             });
         }
     }
-    async onSessionChange(callback) {
+    onSessionChange(callback) {
+        if (!this.addedFocusEventListener) {
+            this.addedFocusEventListener = true;
+            window.addEventListener('focus', () => {
+                this.triggerOnSessionChange();
+            });
+        }
         this.onSessionChangeCallbacks.push(callback);
-        await this.triggerOnSessionChange(callback);
+        this.triggerOnSessionChange(callback);
+        const unsubscribe = () => {
+            this.onSessionChangeCallbacks = this.onSessionChangeCallbacks.filter((c) => c !== callback);
+        };
+        return unsubscribe;
     }
     createProviderMethodProxy(method) {
         const proxy = new Proxy({}, {
@@ -49,7 +57,7 @@ class MonbanClient {
                         csrfToken: await this.getCsrfToken(),
                         provider,
                     }, ...args);
-                    await this.triggerOnSessionChange();
+                    this.triggerOnSessionChange();
                     return result;
                 };
             },
@@ -59,7 +67,7 @@ class MonbanClient {
     signIn = this.createProviderMethodProxy('signIn');
     async signOut() {
         await fetch(`${this.endpoint}/signout`);
-        await this.triggerOnSessionChange();
+        this.triggerOnSessionChange();
     }
     async getSession() {
         try {

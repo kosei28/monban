@@ -17,9 +17,10 @@ export declare class MonbanClient<T extends User, U extends ProviderClients> {
     protected endpoint: string;
     protected providerClients: U;
     protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[];
+    protected addedFocusEventListener: boolean;
     constructor(endpoint: string, providerClients: U);
     protected triggerOnSessionChange(callback?: OnSessionChangeCallback<T>): Promise<void>;
-    onSessionChange(callback: OnSessionChangeCallback<T>): Promise<void>;
+    onSessionChange(callback: OnSessionChangeCallback<T>): () => void;
     protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V): OmitBySpecificTypeValue<{ [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
     signIn: OmitBySpecificTypeValue<{ [K in keyof U]: U[K]["signIn"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
     signOut(): Promise<void>;

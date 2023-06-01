@@ -15,20 +15,52 @@ describe('MonbanClient', () => {
         mock: new MockProviderClient(),
     };
     let monbanClient: MonbanClient<TestUser, typeof providerClients>;
-    let callback: OnSessionChangeCallback<TestUser>;
+    let triggerOnSessionChange: OnSessionChangeCallback<TestUser>;
 
-    globalThis.fetch = async () => new Response();
+    let eventListener: jest.Mock;
 
     beforeEach(async () => {
+        globalThis.fetch = async () => new Response();
+        eventListener = jest.fn();
+        globalThis.window = {
+            addEventListener: eventListener,
+        } as unknown as Window & typeof globalThis;
+
         monbanClient = new MonbanClient('https://example.com', providerClients);
         monbanClient.getCsrfToken = jest.fn().mockResolvedValue('csrf_token');
-        callback = jest.fn();
-        await monbanClient.onSessionChange(callback);
+        triggerOnSessionChange = jest.fn();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (monbanClient as any).triggerOnSessionChange = triggerOnSessionChange;
     });
 
     describe('onSessionChange', () => {
-        test('should triggers callback', () => {
-            expect(callback).toHaveBeenCalledTimes(1);
+        test('should trigger callback', () => {
+            const callback = jest.fn();
+            monbanClient.onSessionChange(callback);
+
+            expect(triggerOnSessionChange).toHaveBeenCalledTimes(1);
+        });
+
+        test('should add only one focus event listener', () => {
+            const callback = jest.fn();
+            monbanClient.onSessionChange(callback);
+            monbanClient.onSessionChange(callback);
+
+            expect(eventListener).toHaveBeenCalledTimes(1);
+            expect(triggerOnSessionChange).toHaveBeenCalledTimes(2);
+        });
+
+        test('should remove callback when unsubscribe is called', () => {
+            const callback = jest.fn();
+            const unsubscribe = monbanClient.onSessionChange(callback);
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            expect((monbanClient as any).onSessionChangeCallbacks.length).toEqual(1);
+
+            unsubscribe();
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            expect((monbanClient as any).onSessionChangeCallbacks.length).toEqual(0);
         });
     });
 
@@ -37,7 +69,7 @@ describe('MonbanClient', () => {
             const result = await monbanClient.signIn.mock();
 
             expect(result).toEqual(true);
-            expect(callback).toHaveBeenCalledTimes(2);
+            expect(triggerOnSessionChange).toHaveBeenCalledTimes(1);
         });
 
         test('should throw error for non-existent provider client', async () => {
@@ -50,7 +82,7 @@ describe('MonbanClient', () => {
         test('should call triggerOnSessionChange', async () => {
             await monbanClient.signOut();
 
-            expect(callback).toHaveBeenCalledTimes(2);
+            expect(triggerOnSessionChange).toHaveBeenCalledTimes(1);
         });
     });
 });

@@ -24,14 +24,11 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
     protected endpoint: string;
     protected providerClients: U;
     protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[] = [];
+    protected addedFocusEventListener = false;
 
     constructor(endpoint: string, providerClients: U) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
-
-        window.addEventListener('focus', async () => {
-            await this.triggerOnSessionChange();
-        });
     }
 
     protected async triggerOnSessionChange(callback?: OnSessionChangeCallback<T>) {
@@ -46,9 +43,22 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
         }
     }
 
-    async onSessionChange(callback: OnSessionChangeCallback<T>) {
+    onSessionChange(callback: OnSessionChangeCallback<T>) {
+        if (!this.addedFocusEventListener) {
+            this.addedFocusEventListener = true;
+            window.addEventListener('focus', () => {
+                this.triggerOnSessionChange();
+            });
+        }
+
         this.onSessionChangeCallbacks.push(callback);
-        await this.triggerOnSessionChange(callback);
+        this.triggerOnSessionChange(callback);
+
+        const unsubscribe = () => {
+            this.onSessionChangeCallbacks = this.onSessionChangeCallbacks.filter((c) => c !== callback);
+        };
+
+        return unsubscribe;
     }
 
     protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V) {
@@ -78,7 +88,7 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
                             ...args,
                         );
 
-                        await this.triggerOnSessionChange();
+                        this.triggerOnSessionChange();
 
                         return result;
                     };
@@ -100,7 +110,7 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
 
     async signOut() {
         await fetch(`${this.endpoint}/signout`);
-        await this.triggerOnSessionChange();
+        this.triggerOnSessionChange();
     }
 
     async getSession() {
