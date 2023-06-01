@@ -1,10 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Monban = exports.Provider = void 0;
+exports.Monban = exports.Provider = exports.Adapter = void 0;
 const cookie = require("cookie");
 const hono_1 = require("hono");
 const jwt = require("jsonwebtoken");
 const uuid_1 = require("uuid");
+class Adapter {
+}
+exports.Adapter = Adapter;
 class Provider {
 }
 exports.Provider = Provider;
@@ -14,7 +17,8 @@ class Monban {
     secret;
     maxAge = 60 * 60;
     csrf = true;
-    callback;
+    adapter;
+    callbacks;
     cookieOptions = {
         path: '/',
         sameSite: 'lax',
@@ -26,7 +30,8 @@ class Monban {
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
         this.csrf = options.csrf ?? this.csrf;
-        this.callback = options.callback;
+        this.adapter = options.adapter;
+        this.callbacks = options.callbacks;
         if (options.cookie !== undefined) {
             this.cookieOptions = {
                 ...this.cookieOptions,
@@ -56,12 +61,15 @@ class Monban {
         }
     }
     async createSession(profile) {
-        const session = await this.callback.createSession(profile, this.maxAge);
+        const session = await this.callbacks.session(profile);
+        if (this.adapter !== undefined) {
+            await this.adapter.createSession(session, this.maxAge);
+        }
         return session;
     }
     async refreshSession(session) {
-        if (this.callback.refreshSession !== undefined) {
-            const newSession = await this.callback.refreshSession(session, this.maxAge);
+        if (this.adapter !== undefined) {
+            const newSession = await this.adapter.refreshSession(session, this.maxAge);
             return newSession;
         }
         else {
@@ -69,8 +77,8 @@ class Monban {
         }
     }
     async verifySession(session) {
-        if (this.callback.verifySession !== undefined) {
-            const verified = await this.callback.verifySession(session);
+        if (this.adapter !== undefined) {
+            const verified = await this.adapter.verifySession(session);
             return verified;
         }
         else {
@@ -78,11 +86,16 @@ class Monban {
         }
     }
     async invalidateSession(session) {
-        if (this.callback.invalidateSession !== undefined) {
-            await this.callback.invalidateSession(session);
+        if (this.adapter !== undefined) {
+            await this.adapter.invalidateSession(session);
         }
     }
-    async createSessionCookie(session) {
+    async invalidateUserSessions(userId) {
+        if (this.adapter !== undefined) {
+            await this.adapter.invalidateUserSessions(userId);
+        }
+    }
+    createSessionCookie(session) {
         let setCookie;
         if (session === undefined) {
             setCookie = cookie.serialize('_monban_token', '', {
@@ -99,7 +112,7 @@ class Monban {
         }
         return setCookie;
     }
-    async createCsrfToken() {
+    createCsrfToken() {
         const token = (0, uuid_1.v4)();
         const setCookie = cookie.serialize('_monban_csrf_token', token, {
             ...this.cookieOptions,
@@ -122,7 +135,7 @@ class Monban {
             return undefined;
         }
         else {
-            const payload = await this.decodeToken(token);
+            const payload = this.decodeToken(token);
             if (payload === undefined) {
                 return undefined;
             }

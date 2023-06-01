@@ -7,6 +7,26 @@ export type User = {
     id: string;
 };
 
+export type Session<T extends User> = {
+    id: string;
+    user: T;
+};
+
+export abstract class Adapter<T extends User> {
+    abstract createSession(session: Session<T>, maxAge: number): Promise<void>;
+    abstract refreshSession(session: Session<T>, maxAge: number): Promise<Session<T>>;
+    abstract verifySession(session: Session<T>): Promise<boolean>;
+    abstract invalidateSession(session: Session<T>): Promise<void>;
+    abstract invalidateUserSessions(userId: string): Promise<void>;
+}
+
+export type TokenPayload<T extends User> = {
+    sub?: string;
+    session: Session<T>;
+    iat: number;
+    exp: number;
+};
+
 export type Profile = {
     provider: string;
 };
@@ -20,24 +40,9 @@ export type Providers<T extends Profile> = { [name: string]: Provider<T> };
 
 export type InferProfile<T> = T extends Providers<infer U> ? U : never;
 
-export type Session<T extends User> = {
-    id: string;
-    user: T;
-};
-
-export type TokenPayload<T extends User> = {
-    sub?: string;
-    session: Session<T>;
-    iat: number;
-    exp: number;
-};
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type MonbanCallback<T extends User, U extends Providers<any>> = {
-    createSession: (profile: InferProfile<U>, maxAge: number) => Promise<Session<T>>;
-    refreshSession?: (session: Session<T>, maxAge: number) => Promise<Session<T>>;
-    verifySession?: (session: Session<T>) => Promise<boolean>;
-    invalidateSession?: (session: Session<T>) => Promise<void>;
+export type MonbanCallbacks<T extends User, U extends Providers<any>> = {
+    session: (profile: InferProfile<U>) => Promise<Session<T>>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,7 +51,8 @@ export type MonbanOptions<T extends User, U extends Providers<any>> = {
     maxAge?: number;
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
-    callback: MonbanCallback<T, U>;
+    adapter?: Adapter<T>;
+    callbacks: MonbanCallbacks<T, U>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -55,7 +61,8 @@ export class Monban<T extends User, U extends Providers<any>> {
     protected secret: string;
     protected maxAge = 60 * 60;
     protected csrf = true;
-    protected callback: MonbanCallback<T, U>;
+    protected adapter?: Adapter<T>;
+    protected callbacks: MonbanCallbacks<T, U>;
 
     cookieOptions: cookie.CookieSerializeOptions = {
         path: '/',
@@ -69,7 +76,8 @@ export class Monban<T extends User, U extends Providers<any>> {
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
         this.csrf = options.csrf ?? this.csrf;
-        this.callback = options.callback;
+        this.adapter = options.adapter;
+        this.callbacks = options.callbacks;
 
         if (options.cookie !== undefined) {
             this.cookieOptions = {
@@ -108,14 +116,18 @@ export class Monban<T extends User, U extends Providers<any>> {
     }
 
     async createSession(profile: InferProfile<U>) {
-        const session = await this.callback.createSession(profile, this.maxAge);
+        const session = await this.callbacks.session(profile);
+
+        if (this.adapter !== undefined) {
+            await this.adapter.createSession(session, this.maxAge);
+        }
 
         return session;
     }
 
     async refreshSession(session: Session<T>) {
-        if (this.callback.refreshSession !== undefined) {
-            const newSession = await this.callback.refreshSession(session, this.maxAge);
+        if (this.adapter !== undefined) {
+            const newSession = await this.adapter.refreshSession(session, this.maxAge);
 
             return newSession;
         } else {
@@ -124,8 +136,8 @@ export class Monban<T extends User, U extends Providers<any>> {
     }
 
     async verifySession(session: Session<T>) {
-        if (this.callback.verifySession !== undefined) {
-            const verified = await this.callback.verifySession(session);
+        if (this.adapter !== undefined) {
+            const verified = await this.adapter.verifySession(session);
 
             return verified;
         } else {
@@ -134,12 +146,18 @@ export class Monban<T extends User, U extends Providers<any>> {
     }
 
     async invalidateSession(session: Session<T>) {
-        if (this.callback.invalidateSession !== undefined) {
-            await this.callback.invalidateSession(session);
+        if (this.adapter !== undefined) {
+            await this.adapter.invalidateSession(session);
         }
     }
 
-    async createSessionCookie(session: Session<T> | undefined) {
+    async invalidateUserSessions(userId: string) {
+        if (this.adapter !== undefined) {
+            await this.adapter.invalidateUserSessions(userId);
+        }
+    }
+
+    createSessionCookie(session: Session<T> | undefined) {
         let setCookie: string;
 
         if (session === undefined) {
@@ -158,7 +176,7 @@ export class Monban<T extends User, U extends Providers<any>> {
         return setCookie;
     }
 
-    async createCsrfToken() {
+    createCsrfToken() {
         const token = uuidv4();
         const setCookie = cookie.serialize('_monban_csrf_token', token, {
             ...this.cookieOptions,
@@ -184,7 +202,7 @@ export class Monban<T extends User, U extends Providers<any>> {
         if (token === undefined) {
             return undefined;
         } else {
-            const payload = await this.decodeToken(token);
+            const payload = this.decodeToken(token);
 
             if (payload === undefined) {
                 return undefined;

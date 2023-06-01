@@ -5,7 +5,6 @@ describe('Monban', () => {
     type TestUser = {
         id: string;
         profile: TestProfile;
-        maxAge: number;
     };
     type TestProfile = {
         provider: string;
@@ -13,14 +12,13 @@ describe('Monban', () => {
 
     const options = {
         secret: 'secret',
-        callback: {
-            createSession: async (profile: TestProfile, maxAge: number) => {
+        callbacks: {
+            session: async (profile: TestProfile) => {
                 const session: Session<TestUser> = {
                     id: 'test_session',
                     user: {
                         id: 'test_user',
                         profile,
-                        maxAge,
                     },
                 };
 
