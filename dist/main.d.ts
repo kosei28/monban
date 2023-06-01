@@ -1,6 +1,6 @@
 import * as cookie from 'cookie';
 export type User = {
-    id?: string;
+    id: string;
 };
 export type Profile = {
     provider: string;

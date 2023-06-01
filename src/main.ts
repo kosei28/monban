@@ -4,7 +4,7 @@ import * as jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
 export type User = {
-    id?: string;
+    id: string;
 };
 
 export type Profile = {
