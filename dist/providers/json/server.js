@@ -30,10 +30,9 @@ class JsonProvider extends main_1.Provider {
                 c.status(400);
                 return c.json(undefined);
             }
-            auth.userId = await monban.createAccount(auth.profile);
-            const payload = await monban.createToken(auth.userId, auth.profile);
-            const token = monban.encodeToken(payload);
-            const setCookie = await monban.getTokenSetCookie(token);
+            auth.userId = await monban.createUser(auth.profile);
+            const session = await monban.createSession(auth.userId);
+            const setCookie = await monban.createSessionCookie(session);
             c.header('set-cookie', setCookie);
             return c.json(undefined);
         });
@@ -43,9 +42,8 @@ class JsonProvider extends main_1.Provider {
                 c.status(401);
                 return c.json(undefined);
             }
-            const payload = await monban.createToken(auth.userId, auth.profile);
-            const token = monban.encodeToken(payload);
-            const setCookie = await monban.getTokenSetCookie(token);
+            const session = await monban.createSession(auth.userId);
+            const setCookie = await monban.createSessionCookie(session);
             c.header('set-cookie', setCookie);
             return c.json(undefined);
         });

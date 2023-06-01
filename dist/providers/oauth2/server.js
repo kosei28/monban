@@ -109,11 +109,10 @@ class OAuth2Provider extends main_1.Provider {
                 return c.redirect(`${endpoint}/signin`);
             }
             if (auth.userId === undefined) {
-                auth.userId = await monban.createAccount(auth.profile);
+                auth.userId = await monban.createUser(auth.profile);
             }
-            const payload = await monban.createToken(auth.userId, auth.profile);
-            const token = monban.encodeToken(payload);
-            const setCookie = await monban.getTokenSetCookie(token);
+            const session = await monban.createSession(auth.userId);
+            const setCookie = await monban.createSessionCookie(session);
             c.header('set-cookie', setCookie);
             return c.redirect(authState.redirect);
         });

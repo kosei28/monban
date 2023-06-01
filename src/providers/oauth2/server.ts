@@ -58,7 +58,7 @@ export class OAuth2Provider<T extends Profile, U extends OAuth2Tokens> extends P
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async authenticate(req: Request, callbackUrl: string, monban: Monban<any, Providers<T>>) {
+    async authenticate(req: Request, callbackUrl: string, monban: Monban<Providers<T>>) {
         const code = new URL(req.url).searchParams.get('code') ?? '';
 
         try {
@@ -102,7 +102,7 @@ export class OAuth2Provider<T extends Profile, U extends OAuth2Tokens> extends P
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<T>>) {
+    async handleRequest(req: Request, endpoint: string, monban: Monban<Providers<T>>) {
         const app = new Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
 
@@ -147,12 +147,11 @@ export class OAuth2Provider<T extends Profile, U extends OAuth2Tokens> extends P
             }
 
             if (auth.userId === undefined) {
-                auth.userId = await monban.createAccount(auth.profile);
+                auth.userId = await monban.createUser(auth.profile);
             }
 
-            const payload = await monban.createToken(auth.userId, auth.profile);
-            const token = monban.encodeToken(payload);
-            const setCookie = await monban.getTokenSetCookie(token);
+            const session = await monban.createSession(auth.userId);
+            const setCookie = await monban.createSessionCookie(session);
             c.header('set-cookie', setCookie);
 
             return c.redirect(authState.redirect);

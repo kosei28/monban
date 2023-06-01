@@ -3,60 +3,57 @@ import { Hono } from 'hono';
 import * as jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
-export type SessionUser = {
-    id: string;
-};
-
 export type Profile = {
     provider: string;
 };
 
 export abstract class Provider<T extends Profile> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    abstract handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<T>>): Promise<Response>;
+    abstract handleRequest(req: Request, endpoint: string, monban: Monban<Providers<T>>): Promise<Response>;
 }
 
 export type Providers<T extends Profile> = { [name: string]: Provider<T> };
 
 export type InferProfile<T> = T extends Providers<infer U> ? U : never;
 
-export type TokenPayloadInput<T extends SessionUser> = {
-    sub: string;
-    sessionId?: string;
-    user: T;
+export type Session = {
+    id: string;
+    userId: string;
 };
 
-export type TokenPayload<T extends SessionUser> = TokenPayloadInput<T> & {
+export type TokenPayload = {
+    sub: string;
+    sessionId: string;
     iat: number;
     exp: number;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type MonbanCallback<T extends SessionUser, U extends Providers<any>> = {
-    createToken?: (userId: string, profile: InferProfile<U>, maxAge: number) => Promise<TokenPayloadInput<T>>;
-    refreshToken?: (oldPayload: TokenPayload<T>, maxAge: number) => Promise<TokenPayloadInput<T>>;
-    verifyToken?: (payload: TokenPayload<T>) => Promise<boolean>;
-    invalidateToken?: (payload: TokenPayload<T>) => Promise<void>;
-    createAccount?: (profile: InferProfile<U>) => Promise<string>;
-    verifyUser?: (profile: InferProfile<U>) => Promise<string | undefined>;
+export type MonbanCallback<T extends Providers<any>> = {
+    createSession?: (userId: string, maxAge: number) => Promise<Session>;
+    refreshSession?: (session: Session, maxAge: number) => Promise<Session>;
+    verifySession?: (session: Session) => Promise<boolean>;
+    invalidateSession?: (session: Session) => Promise<void>;
+    createUser?: (profile: InferProfile<T>) => Promise<string>;
+    verifyUser?: (profile: InferProfile<T>) => Promise<string | undefined>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type MonbanOptions<T extends SessionUser, U extends Providers<any>> = {
+export type MonbanOptions<T extends Providers<any>> = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
-    callback?: MonbanCallback<T, U>;
+    callback?: MonbanCallback<T>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class Monban<T extends SessionUser, U extends Providers<any>> {
-    protected providers: U;
+export class Monban<T extends Providers<any>> {
+    protected providers: T;
     protected secret: string;
     protected maxAge = 60 * 60;
     protected csrf = true;
-    protected callback: MonbanCallback<T, U> = {};
+    protected callback: MonbanCallback<T> = {};
 
     cookieOptions: cookie.CookieSerializeOptions = {
         path: '/',
@@ -65,7 +62,7 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         httpOnly: true,
     };
 
-    constructor(providers: U, options: MonbanOptions<T, U>) {
+    constructor(providers: T, options: MonbanOptions<T>) {
         this.providers = providers;
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
@@ -80,64 +77,62 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         }
     }
 
-    encodeToken(payload: TokenPayloadInput<T>) {
-        const token = jwt.sign(payload, this.secret, {
-            algorithm: 'HS256',
-            expiresIn: this.maxAge,
-        });
+    encodeToken(session: Session) {
+        const token = jwt.sign(
+            {
+                sub: session.userId,
+                sessionId: session.id,
+            },
+            this.secret,
+            {
+                algorithm: 'HS256',
+                expiresIn: this.maxAge,
+            },
+        );
 
         return token;
     }
 
     decodeToken(token: string) {
         try {
-            const payload = jwt.verify(token, this.secret, {
+            const session = jwt.verify(token, this.secret, {
                 algorithms: ['HS256'],
-            }) as TokenPayload<T>;
+            }) as TokenPayload;
 
-            return payload;
+            return session;
         } catch (e) {
             return undefined;
         }
     }
 
-    async createToken(userId: string, profile: InferProfile<U>) {
-        if (this.callback.createToken !== undefined) {
-            const payload = await this.callback.createToken(userId, profile, this.maxAge);
+    async createSession(userId: string) {
+        if (this.callback.createSession !== undefined) {
+            const session = await this.callback.createSession(userId, this.maxAge);
 
-            return payload;
+            return session;
         } else {
-            const payload: TokenPayloadInput<T> = {
-                sub: userId,
-                sessionId: undefined,
-                user: {
-                    id: userId,
-                } as T,
+            const session: Session = {
+                id: uuidv4(),
+                userId,
             };
 
-            return payload;
+            return session;
         }
     }
 
-    async refreshToken(oldPayload: TokenPayload<T>) {
-        if (this.callback.refreshToken !== undefined) {
-            const payload = await this.callback.refreshToken(oldPayload, this.maxAge);
+    async refreshSession(session: Session) {
+        if (this.callback.refreshSession !== undefined) {
+            const newSession = await this.callback.refreshSession(session, this.maxAge);
 
-            return payload;
+            return newSession;
         } else {
-            const payload: TokenPayloadInput<T> = {
-                sub: oldPayload.sub,
-                sessionId: oldPayload.sessionId,
-                user: oldPayload.user,
-            };
-
-            return payload;
+            return session;
         }
     }
 
-    async verifyToken(payload: TokenPayload<T>) {
-        if (this.callback.verifyToken !== undefined) {
-            const verified = await this.callback.verifyToken(payload);
+    async verifySession(session: Session) {
+        if (this.callback.verifySession !== undefined) {
+            const verified = await this.callback.verifySession(session);
 
             return verified;
         } else {
@@ -145,15 +140,34 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         }
     }
 
-    async invalidateToken(payload: TokenPayload<T>) {
-        if (this.callback.invalidateToken !== undefined) {
-            await this.callback.invalidateToken(payload);
+    async invalidateSession(session: Session) {
+        if (this.callback.invalidateSession !== undefined) {
+            await this.callback.invalidateSession(session);
         }
     }
 
-    async createAccount(profile: InferProfile<U>) {
-        if (this.callback.createAccount !== undefined) {
-            const userId = await this.callback.createAccount(profile);
+    async createSessionCookie(session: Session | undefined) {
+        let setCookie: string;
+
+        if (session === undefined) {
+            setCookie = cookie.serialize('_monban_token', '', {
+                ...this.cookieOptions,
+                maxAge: 0,
+            });
+        } else {
+            const token = this.encodeToken(session);
+            setCookie = cookie.serialize('_monban_token', token, {
+                ...this.cookieOptions,
+                maxAge: this.maxAge,
+            });
+        }
+
+        return setCookie;
+    }
+
+    async createUser(profile: InferProfile<T>) {
+        if (this.callback.createUser !== undefined) {
+            const userId = await this.callback.createUser(profile);
 
             return userId;
         } else {
@@ -163,7 +177,7 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         }
     }
 
-    async verifyUser(profile: InferProfile<U>) {
+    async verifyUser(profile: InferProfile<T>) {
         if (this.callback.verifyUser !== undefined) {
             const userId = await this.callback.verifyUser(profile);
 
@@ -171,24 +185,6 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         } else {
             return undefined;
         }
-    }
-
-    async getTokenSetCookie(token: string | undefined) {
-        let setCookie: string;
-
-        if (token === undefined) {
-            setCookie = cookie.serialize('_monban_token', '', {
-                ...this.cookieOptions,
-                maxAge: 0,
-            });
-        } else {
-            setCookie = cookie.serialize('_monban_token', token, {
-                ...this.cookieOptions,
-                maxAge: this.maxAge,
-            });
-        }
-
-        return setCookie;
     }
 
     async createCsrfToken() {
@@ -219,8 +215,17 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         } else {
             const payload = await this.decodeToken(token);
 
-            if (payload !== undefined && (await this.verifyToken(payload))) {
-                return payload;
+            if (payload === undefined) {
+                return undefined;
+            }
+
+            const session: Session = {
+                id: payload.sessionId,
+                userId: payload.sub,
+            };
+
+            if (await this.verifySession(session)) {
+                return session;
             }
 
             return undefined;
@@ -244,33 +249,32 @@ export class Monban<T extends SessionUser, U extends Providers<any>> {
         });
 
         app.get('/signout', async (c) => {
-            const payload = await this.isAuthenticated(c.req.raw);
+            const session = await this.isAuthenticated(c.req.raw);
 
-            if (payload !== undefined) {
-                await this.invalidateToken(payload);
+            if (session !== undefined) {
+                await this.invalidateSession(session);
             }
 
-            const setCookie = await this.getTokenSetCookie(undefined);
+            const setCookie = await this.createSessionCookie(undefined);
             c.header('set-cookie', setCookie);
 
             return c.json(undefined);
         });
 
         app.get('/session', async (c) => {
-            const payload = await this.isAuthenticated(c.req.raw);
+            const session = await this.isAuthenticated(c.req.raw);
 
-            if (payload === undefined) {
+            if (session === undefined) {
                 c.status(401);
 
                 return c.json(undefined);
             }
 
-            const newPayload = await this.refreshToken(payload);
-            const token = this.encodeToken(newPayload);
-            const setCookie = await this.getTokenSetCookie(token);
+            const newSession = await this.refreshSession(session);
+            const setCookie = await this.createSessionCookie(newSession);
             c.header('set-cookie', setCookie);
 
-            return c.json(newPayload);
+            return c.json(newSession);
         });
 
         app.get('/csrf', async (c) => {

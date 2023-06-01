@@ -2,14 +2,13 @@ import * as cookie from 'cookie';
 import { Monban, Provider } from '../src/main';
 
 describe('Monban', () => {
-    type TestUser = { id: string };
     type TestProfile = { provider: string };
     const options = { secret: 'secret' };
 
     describe('isAuthenticated', () => {
         test('should return undefined if token is not present', async () => {
             const providers = {};
-            const monban = new Monban<TestUser, typeof providers>(providers, options);
+            const monban = new Monban(providers, options);
 
             const req = new Request('https://example.com');
 
@@ -19,10 +18,10 @@ describe('Monban', () => {
 
         test('should return undefined if token is invalid', async () => {
             const providers = {};
-            const monban = new Monban<TestUser, typeof providers>(providers, options);
-            const anotherMonban = new Monban<TestUser, typeof providers>(providers, { secret: 'another secret' });
+            const monban = new Monban(providers, options);
+            const anotherMonban = new Monban(providers, { secret: 'another secret' });
 
-            const token = anotherMonban.encodeToken({ sub: 'test', user: { id: 'test' } });
+            const token = anotherMonban.encodeToken({ id: 'test_session', userId: 'test_user' });
             const req = new Request('https://example.com', {
                 headers: new Headers({
                     cookie: cookie.serialize('_monban_token', token),
@@ -35,9 +34,9 @@ describe('Monban', () => {
 
         test('should return undefined if csrf token is not valid and request method is not GET', async () => {
             const providers = {};
-            const monban = new Monban<TestUser, typeof providers>(providers, options);
+            const monban = new Monban(providers, options);
 
-            const token = monban.encodeToken({ sub: 'test', user: { id: 'test' } });
+            const token = monban.encodeToken({ id: 'test_session', userId: 'test_user' });
             const req = new Request('https://example.com', {
                 method: 'POST',
                 headers: new Headers({
@@ -55,10 +54,10 @@ describe('Monban', () => {
 
         test('should return the payload if token and csrf token are valid', async () => {
             const providers = {};
-            const monban = new Monban<TestUser, typeof providers>(providers, options);
+            const monban = new Monban(providers, options);
 
-            const payload = { sub: 'test', user: { id: 'test' } };
-            const token = monban.encodeToken(payload);
+            const session = { id: 'test_session', userId: 'test_user' };
+            const token = monban.encodeToken(session);
             const req = new Request('https://example.com', {
                 headers: new Headers({
                     cookie: `${cookie.serialize('_monban_token', token)}; ${cookie.serialize(
@@ -70,7 +69,7 @@ describe('Monban', () => {
             });
 
             const result = await monban.isAuthenticated(req);
-            expect(result).toEqual(expect.objectContaining(payload));
+            expect(result).toEqual(session);
         });
     });
 
@@ -81,7 +80,7 @@ describe('Monban', () => {
             } as unknown as Provider<TestProfile>;
 
             const providers = { mock: mockProvider };
-            const monban = new Monban<TestUser, typeof providers>(providers, options);
+            const monban = new Monban(providers, options);
 
             const req = new Request('https://example.com/providers/mock');
             const res = await monban.handleRequest(req, '/');
@@ -92,7 +91,7 @@ describe('Monban', () => {
 
         test('should return 404 for non-existent provider', async () => {
             const providers = {};
-            const monban = new Monban<TestUser, typeof providers>(providers, options);
+            const monban = new Monban(providers, options);
 
             const req = new Request('https://example.com/providers/nonexistent');
             const res = await monban.handleRequest(req, '/');
@@ -102,10 +101,10 @@ describe('Monban', () => {
 
         test('should set cookie and return empty response for /signout path', async () => {
             const providers = {};
-            const monban = new Monban<TestUser, typeof providers>(providers, options);
+            const monban = new Monban(providers, options);
             const req = new Request('https://example.com/signout');
 
-            monban.isAuthenticated = jest.fn().mockResolvedValue({ sub: 'test', user: { id: 'test' } });
+            monban.isAuthenticated = jest.fn().mockResolvedValue({ id: 'sessionId test', userId: 'test_user' });
 
             const res = await monban.handleRequest(req, '/');
 
@@ -117,10 +116,10 @@ describe('Monban', () => {
 
         test('should return user payload for /session path if authenticated', async () => {
             const providers = {};
-            const monban = new Monban<TestUser, typeof providers>(providers, options);
+            const monban = new Monban(providers, options);
 
-            const payload = { sub: 'test', user: { id: 'test' } };
-            const token = monban.encodeToken(payload);
+            const session = { id: 'test_session', userId: 'test_user' };
+            const token = monban.encodeToken(session);
             const req = new Request('https://example.com/session', {
                 headers: new Headers({
                     cookie: cookie.serialize('_monban_token', token),
@@ -129,12 +128,12 @@ describe('Monban', () => {
             });
             const res = await monban.handleRequest(req, '/');
 
-            expect(await res.json()).toEqual(payload);
+            expect(await res.json()).toEqual(session);
         });
 
         test('should return 401 status for /session path if not authenticated', async () => {
             const providers = {};
-            const monban = new Monban<TestUser, typeof providers>(providers, options);
+            const monban = new Monban(providers, options);
 
             const req = new Request('https://example.com/session');
             const res = await monban.handleRequest(req, '/');
@@ -145,7 +144,7 @@ describe('Monban', () => {
 
         test('should return csrf token for /csrf path if authenticated', async () => {
             const providers = {};
-            const monban = new Monban<TestUser, typeof providers>(providers, options);
+            const monban = new Monban(providers, options);
 
             const req = new Request('https://example.com/csrf');
             const res = await monban.handleRequest(req, '/');

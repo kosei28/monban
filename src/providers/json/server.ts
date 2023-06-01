@@ -7,7 +7,7 @@ export type JsonProfile<T> = {
 
 export class JsonProvider<T> extends Provider<JsonProfile<T>> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async authenticate(req: Request, monban: Monban<any, any>) {
+    async authenticate(req: Request, monban: Monban<any>) {
         try {
             const profile = {
                 provider: 'json',
@@ -26,7 +26,7 @@ export class JsonProvider<T> extends Provider<JsonProfile<T>> {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleRequest(req: Request, endpoint: string, monban: Monban<any, any>) {
+    async handleRequest(req: Request, endpoint: string, monban: Monban<any>) {
         const app = new Hono().basePath(endpoint);
 
         app.post('/signup', async (c) => {
@@ -38,11 +38,10 @@ export class JsonProvider<T> extends Provider<JsonProfile<T>> {
                 return c.json(undefined);
             }
 
-            auth.userId = await monban.createAccount(auth.profile);
+            auth.userId = await monban.createUser(auth.profile);
 
-            const payload = await monban.createToken(auth.userId, auth.profile);
-            const token = monban.encodeToken(payload);
-            const setCookie = await monban.getTokenSetCookie(token);
+            const session = await monban.createSession(auth.userId);
+            const setCookie = await monban.createSessionCookie(session);
             c.header('set-cookie', setCookie);
 
             return c.json(undefined);
@@ -57,9 +56,8 @@ export class JsonProvider<T> extends Provider<JsonProfile<T>> {
                 return c.json(undefined);
             }
 
-            const payload = await monban.createToken(auth.userId, auth.profile);
-            const token = monban.encodeToken(payload);
-            const setCookie = await monban.getTokenSetCookie(token);
+            const session = await monban.createSession(auth.userId);
+            const setCookie = await monban.createSessionCookie(session);
             c.header('set-cookie', setCookie);
 
             return c.json(undefined);

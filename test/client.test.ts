@@ -11,18 +11,17 @@ class MockProviderClient extends ProviderClient {
 }
 
 describe('MonbanClient', () => {
-    type TestUser = { id: string };
     const providerClients = {
         mock: new MockProviderClient(),
     };
-    let monbanClient: MonbanClient<TestUser, typeof providerClients>;
-    let callback: OnSessionChangeCallback<TestUser>;
+    let monbanClient: MonbanClient<typeof providerClients>;
+    let callback: OnSessionChangeCallback;
 
     globalThis.fetch = async () => new Response();
 
     beforeEach(async () => {
-        monbanClient = new MonbanClient<TestUser, typeof providerClients>('https://example.com', providerClients);
-        monbanClient.getCsrfToken = jest.fn().mockResolvedValue('csrf token');
+        monbanClient = new MonbanClient('https://example.com', providerClients);
+        monbanClient.getCsrfToken = jest.fn().mockResolvedValue('csrf_token');
         callback = jest.fn();
         await monbanClient.onSessionChange(callback);
     });

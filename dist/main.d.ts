@@ -1,62 +1,60 @@
 import * as cookie from 'cookie';
-export type SessionUser = {
-    id: string;
-};
 export type Profile = {
     provider: string;
 };
 export declare abstract class Provider<T extends Profile> {
-    abstract handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<T>>): Promise<Response>;
+    abstract handleRequest(req: Request, endpoint: string, monban: Monban<Providers<T>>): Promise<Response>;
 }
 export type Providers<T extends Profile> = {
     [name: string]: Provider<T>;
 };
 export type InferProfile<T> = T extends Providers<infer U> ? U : never;
-export type TokenPayloadInput<T extends SessionUser> = {
-    sub: string;
-    sessionId?: string;
-    user: T;
+export type Session = {
+    id: string;
+    userId: string;
 };
-export type TokenPayload<T extends SessionUser> = TokenPayloadInput<T> & {
+export type TokenPayload = {
+    sub: string;
+    sessionId: string;
     iat: number;
     exp: number;
 };
-export type MonbanCallback<T extends SessionUser, U extends Providers<any>> = {
-    createToken?: (userId: string, profile: InferProfile<U>, maxAge: number) => Promise<TokenPayloadInput<T>>;
-    refreshToken?: (oldPayload: TokenPayload<T>, maxAge: number) => Promise<TokenPayloadInput<T>>;
-    verifyToken?: (payload: TokenPayload<T>) => Promise<boolean>;
-    invalidateToken?: (payload: TokenPayload<T>) => Promise<void>;
-    createAccount?: (profile: InferProfile<U>) => Promise<string>;
-    verifyUser?: (profile: InferProfile<U>) => Promise<string | undefined>;
+export type MonbanCallback<T extends Providers<any>> = {
+    createSession?: (userId: string, maxAge: number) => Promise<Session>;
+    refreshSession?: (session: Session, maxAge: number) => Promise<Session>;
+    verifySession?: (session: Session) => Promise<boolean>;
+    invalidateSession?: (session: Session) => Promise<void>;
+    createUser?: (profile: InferProfile<T>) => Promise<string>;
+    verifyUser?: (profile: InferProfile<T>) => Promise<string | undefined>;
 };
-export type MonbanOptions<T extends SessionUser, U extends Providers<any>> = {
+export type MonbanOptions<T extends Providers<any>> = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
-    callback?: MonbanCallback<T, U>;
+    callback?: MonbanCallback<T>;
 };
-export declare class Monban<T extends SessionUser, U extends Providers<any>> {
-    protected providers: U;
+export declare class Monban<T extends Providers<any>> {
+    protected providers: T;
     protected secret: string;
     protected maxAge: number;
     protected csrf: boolean;
-    protected callback: MonbanCallback<T, U>;
+    protected callback: MonbanCallback<T>;
     cookieOptions: cookie.CookieSerializeOptions;
-    constructor(providers: U, options: MonbanOptions<T, U>);
-    encodeToken(payload: TokenPayloadInput<T>): string;
-    decodeToken(token: string): TokenPayload<T> | undefined;
-    createToken(userId: string, profile: InferProfile<U>): Promise<TokenPayloadInput<T>>;
-    refreshToken(oldPayload: TokenPayload<T>): Promise<TokenPayloadInput<T>>;
-    verifyToken(payload: TokenPayload<T>): Promise<boolean>;
-    invalidateToken(payload: TokenPayload<T>): Promise<void>;
-    createAccount(profile: InferProfile<U>): Promise<string>;
-    verifyUser(profile: InferProfile<U>): Promise<string | undefined>;
-    getTokenSetCookie(token: string | undefined): Promise<string>;
+    constructor(providers: T, options: MonbanOptions<T>);
+    encodeToken(session: Session): string;
+    decodeToken(token: string): TokenPayload | undefined;
+    createSession(userId: string): Promise<Session>;
+    refreshSession(session: Session): Promise<Session>;
+    verifySession(session: Session): Promise<boolean>;
+    invalidateSession(session: Session): Promise<void>;
+    createSessionCookie(session: Session | undefined): Promise<string>;
+    createUser(profile: InferProfile<T>): Promise<string>;
+    verifyUser(profile: InferProfile<T>): Promise<string | undefined>;
     createCsrfToken(): Promise<{
         token: string;
         setCookie: string;
     }>;
-    isAuthenticated(req: Request): Promise<TokenPayload<T> | undefined>;
+    isAuthenticated(req: Request): Promise<Session | undefined>;
     handleRequest(req: Request, endpoint: string): Promise<Response>;
 }

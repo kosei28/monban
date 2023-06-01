@@ -1,5 +1,5 @@
 import * as cookie from 'cookie';
-import type { SessionUser, TokenPayloadInput } from './main';
+import type { Session } from './main';
 import type { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 
 export type ProviderClientOptions = {
@@ -22,20 +22,20 @@ export type ProviderClientMethods = KeyOfSpecificTypeValue<ProviderClient, ((...
 export type ProviderClients = { [key: string]: ProviderClient };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type OnSessionChangeCallback<T extends SessionUser> = (session: TokenPayloadInput<T> | undefined) => void;
+export type OnSessionChangeCallback = (session: Session | undefined) => void;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class MonbanClient<T extends SessionUser, U extends ProviderClients> {
+export class MonbanClient<T extends ProviderClients> {
     protected endpoint: string;
-    protected providerClients: U;
-    protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[] = [];
+    protected providerClients: T;
+    protected onSessionChangeCallbacks: OnSessionChangeCallback[] = [];
 
-    constructor(endpoint: string, providerClients: U) {
+    constructor(endpoint: string, providerClients: T) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
     }
 
-    protected async triggerOnSessionChange(callback?: OnSessionChangeCallback<T>) {
+    protected async triggerOnSessionChange(callback?: OnSessionChangeCallback) {
         const session = await this.getSession();
 
         if (callback !== undefined) {
@@ -47,7 +47,7 @@ export class MonbanClient<T extends SessionUser, U extends ProviderClients> {
         }
     }
 
-    async onSessionChange(callback: OnSessionChangeCallback<T>) {
+    async onSessionChange(callback: OnSessionChangeCallback) {
         this.onSessionChangeCallbacks.push(callback);
         await this.triggerOnSessionChange(callback);
     }
@@ -87,7 +87,7 @@ export class MonbanClient<T extends SessionUser, U extends ProviderClients> {
             },
         ) as OmitBySpecificTypeValue<
             {
-                [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
+                [K in keyof T]: T[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
                     ? (...args: P) => R
                     : undefined;
             },
@@ -109,7 +109,7 @@ export class MonbanClient<T extends SessionUser, U extends ProviderClients> {
     async getSession() {
         try {
             const res = await fetch(`${this.endpoint}/session`);
-            const session = (await res.json()) as TokenPayloadInput<T>;
+            const session = (await res.json()) as Session;
 
             return session;
         } catch (e) {

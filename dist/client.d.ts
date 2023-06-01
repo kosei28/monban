@@ -1,4 +1,4 @@
-import type { SessionUser, TokenPayloadInput } from './main';
+import type { Session } from './main';
 import type { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 export type ProviderClientOptions = {
     endpoint: string;
@@ -13,18 +13,18 @@ export type ProviderClientMethods = KeyOfSpecificTypeValue<ProviderClient, ((...
 export type ProviderClients = {
     [key: string]: ProviderClient;
 };
-export type OnSessionChangeCallback<T extends SessionUser> = (session: TokenPayloadInput<T> | undefined) => void;
-export declare class MonbanClient<T extends SessionUser, U extends ProviderClients> {
+export type OnSessionChangeCallback = (session: Session | undefined) => void;
+export declare class MonbanClient<T extends ProviderClients> {
     protected endpoint: string;
-    protected providerClients: U;
-    protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[];
-    constructor(endpoint: string, providerClients: U);
-    protected triggerOnSessionChange(callback?: OnSessionChangeCallback<T>): Promise<void>;
-    onSessionChange(callback: OnSessionChangeCallback<T>): Promise<void>;
-    protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V): OmitBySpecificTypeValue<{ [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
-    signUp: OmitBySpecificTypeValue<{ [K in keyof U]: U[K]["signUp"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
-    signIn: OmitBySpecificTypeValue<{ [K in keyof U]: U[K]["signIn"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
+    protected providerClients: T;
+    protected onSessionChangeCallbacks: OnSessionChangeCallback[];
+    constructor(endpoint: string, providerClients: T);
+    protected triggerOnSessionChange(callback?: OnSessionChangeCallback): Promise<void>;
+    onSessionChange(callback: OnSessionChangeCallback): Promise<void>;
+    protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V): OmitBySpecificTypeValue<{ [K in keyof T]: T[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
+    signUp: OmitBySpecificTypeValue<{ [K in keyof T]: T[K]["signUp"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
+    signIn: OmitBySpecificTypeValue<{ [K in keyof T]: T[K]["signIn"] extends (options: ProviderClientOptions, ...args: infer P) => infer R ? (...args: P) => R : undefined; }, undefined>;
     signOut(): Promise<void>;
-    getSession(): Promise<TokenPayloadInput<T> | undefined>;
+    getSession(): Promise<Session | undefined>;
     getCsrfToken(): Promise<string>;
 }
