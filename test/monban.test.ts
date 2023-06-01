@@ -1,9 +1,33 @@
 import * as cookie from 'cookie';
-import { Monban, Provider } from '../src/main';
+import { Monban, Provider, Session } from '../src/main';
 
 describe('Monban', () => {
-    type TestProfile = { provider: string };
-    const options = { secret: 'secret' };
+    type TestUser = {
+        id: string;
+        profile: TestProfile;
+        maxAge: number;
+    };
+    type TestProfile = {
+        provider: string;
+    };
+
+    const options = {
+        secret: 'secret',
+        callback: {
+            createSession: async (profile: TestProfile, maxAge: number) => {
+                const session: Session<TestUser> = {
+                    id: 'test_session',
+                    user: {
+                        id: 'test_user',
+                        profile,
+                        maxAge,
+                    },
+                };
+
+                return session;
+            },
+        },
+    };
 
     describe('isAuthenticated', () => {
         test('should return undefined if token is not present', async () => {
@@ -19,9 +43,10 @@ describe('Monban', () => {
         test('should return undefined if token is invalid', async () => {
             const providers = {};
             const monban = new Monban(providers, options);
-            const anotherMonban = new Monban(providers, { secret: 'another secret' });
+            const anotherMonban = new Monban(providers, { ...options, secret: 'another_secret' });
 
-            const token = anotherMonban.encodeToken({ id: 'test_session', userId: 'test_user' });
+            const session = await monban.createSession({ provider: 'test_provider' });
+            const token = anotherMonban.encodeToken(session);
             const req = new Request('https://example.com', {
                 headers: new Headers({
                     cookie: cookie.serialize('_monban_token', token),
@@ -36,7 +61,8 @@ describe('Monban', () => {
             const providers = {};
             const monban = new Monban(providers, options);
 
-            const token = monban.encodeToken({ id: 'test_session', userId: 'test_user' });
+            const session = await monban.createSession({ provider: 'test_provider' });
+            const token = monban.encodeToken(session);
             const req = new Request('https://example.com', {
                 method: 'POST',
                 headers: new Headers({
@@ -56,7 +82,7 @@ describe('Monban', () => {
             const providers = {};
             const monban = new Monban(providers, options);
 
-            const session = { id: 'test_session', userId: 'test_user' };
+            const session = await monban.createSession({ provider: 'test_provider' });
             const token = monban.encodeToken(session);
             const req = new Request('https://example.com', {
                 headers: new Headers({
@@ -118,7 +144,7 @@ describe('Monban', () => {
             const providers = {};
             const monban = new Monban(providers, options);
 
-            const session = { id: 'test_session', userId: 'test_user' };
+            const session = await monban.createSession({ provider: 'test_provider' });
             const token = monban.encodeToken(session);
             const req = new Request('https://example.com/session', {
                 headers: new Headers({

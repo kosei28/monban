@@ -39,7 +39,7 @@ class OAuth2Provider extends main_1.Provider {
         return url.toString();
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async authenticate(req, callbackUrl, monban) {
+    async authenticate(req, callbackUrl) {
         const code = new URL(req.url).searchParams.get('code') ?? '';
         try {
             const params = new URLSearchParams({
@@ -65,11 +65,7 @@ class OAuth2Provider extends main_1.Provider {
             if (profile === undefined) {
                 throw new Error('Invalid token');
             }
-            const userId = await monban.verifyUser(profile);
-            return {
-                profile,
-                userId,
-            };
+            return profile;
         }
         catch (e) {
             return undefined;
@@ -104,14 +100,11 @@ class OAuth2Provider extends main_1.Provider {
             catch (e) {
                 return c.redirect(`${endpoint}/signin`);
             }
-            const auth = await this.authenticate(c.req.raw, callbackUrl, monban);
-            if (auth === undefined) {
+            const profile = await this.authenticate(c.req.raw, callbackUrl);
+            if (profile === undefined) {
                 return c.redirect(`${endpoint}/signin`);
             }
-            if (auth.userId === undefined) {
-                auth.userId = await monban.createUser(auth.profile);
-            }
-            const session = await monban.createSession(auth.userId);
+            const session = await monban.createSession(profile);
             const setCookie = await monban.createSessionCookie(session);
             c.header('set-cookie', setCookie);
             return c.redirect(authState.redirect);

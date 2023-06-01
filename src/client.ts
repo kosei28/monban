@@ -1,5 +1,5 @@
 import * as cookie from 'cookie';
-import type { Session } from './main';
+import type { Session, User } from './main';
 import type { KeyOfSpecificTypeValue, OmitBySpecificTypeValue } from './types';
 
 export type ProviderClientOptions = {
@@ -10,9 +10,6 @@ export type ProviderClientOptions = {
 
 export abstract class ProviderClient {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    signUp?(options: ProviderClientOptions, ...args: any): Promise<any>;
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     abstract signIn(options: ProviderClientOptions, ...args: any): Promise<any>;
 }
 
@@ -21,21 +18,19 @@ export type ProviderClientMethods = KeyOfSpecificTypeValue<ProviderClient, ((...
 
 export type ProviderClients = { [key: string]: ProviderClient };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type OnSessionChangeCallback = (session: Session | undefined) => void;
+export type OnSessionChangeCallback<T extends User> = (session: Session<T> | undefined) => void;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class MonbanClient<T extends ProviderClients> {
+export class MonbanClient<T extends User, U extends ProviderClients> {
     protected endpoint: string;
-    protected providerClients: T;
-    protected onSessionChangeCallbacks: OnSessionChangeCallback[] = [];
+    protected providerClients: U;
+    protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[] = [];
 
-    constructor(endpoint: string, providerClients: T) {
+    constructor(endpoint: string, providerClients: U) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
     }
 
-    protected async triggerOnSessionChange(callback?: OnSessionChangeCallback) {
+    protected async triggerOnSessionChange(callback?: OnSessionChangeCallback<T>) {
         const session = await this.getSession();
 
         if (callback !== undefined) {
@@ -47,7 +42,7 @@ export class MonbanClient<T extends ProviderClients> {
         }
     }
 
-    async onSessionChange(callback: OnSessionChangeCallback) {
+    async onSessionChange(callback: OnSessionChangeCallback<T>) {
         this.onSessionChangeCallbacks.push(callback);
         await this.triggerOnSessionChange(callback);
     }
@@ -87,7 +82,7 @@ export class MonbanClient<T extends ProviderClients> {
             },
         ) as OmitBySpecificTypeValue<
             {
-                [K in keyof T]: T[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
+                [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
                     ? (...args: P) => R
                     : undefined;
             },
@@ -96,8 +91,6 @@ export class MonbanClient<T extends ProviderClients> {
 
         return proxy;
     }
-
-    signUp = this.createProviderMethodProxy('signUp');
 
     signIn = this.createProviderMethodProxy('signIn');
 
@@ -109,7 +102,7 @@ export class MonbanClient<T extends ProviderClients> {
     async getSession() {
         try {
             const res = await fetch(`${this.endpoint}/session`);
-            const session = (await res.json()) as Session;
+            const session = (await res.json()) as Session<T>;
 
             return session;
         } catch (e) {

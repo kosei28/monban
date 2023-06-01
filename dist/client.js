@@ -5,7 +5,6 @@ const cookie = require("cookie");
 class ProviderClient {
 }
 exports.ProviderClient = ProviderClient;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 class MonbanClient {
     endpoint;
     providerClients;
@@ -54,7 +53,6 @@ class MonbanClient {
         });
         return proxy;
     }
-    signUp = this.createProviderMethodProxy('signUp');
     signIn = this.createProviderMethodProxy('signIn');
     async signOut() {
         await fetch(`${this.endpoint}/signout`);

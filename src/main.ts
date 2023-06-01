@@ -3,57 +3,59 @@ import { Hono } from 'hono';
 import * as jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 
+export type User = {
+    id?: string;
+};
+
 export type Profile = {
     provider: string;
 };
 
 export abstract class Provider<T extends Profile> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    abstract handleRequest(req: Request, endpoint: string, monban: Monban<Providers<T>>): Promise<Response>;
+    abstract handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<T>>): Promise<Response>;
 }
 
 export type Providers<T extends Profile> = { [name: string]: Provider<T> };
 
 export type InferProfile<T> = T extends Providers<infer U> ? U : never;
 
-export type Session = {
+export type Session<T extends User> = {
     id: string;
-    userId: string;
+    user: T;
 };
 
-export type TokenPayload = {
-    sub: string;
-    sessionId: string;
+export type TokenPayload<T extends User> = {
+    sub?: string;
+    session: Session<T>;
     iat: number;
     exp: number;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type MonbanCallback<T extends Providers<any>> = {
-    createSession?: (userId: string, maxAge: number) => Promise<Session>;
-    refreshSession?: (session: Session, maxAge: number) => Promise<Session>;
-    verifySession?: (session: Session) => Promise<boolean>;
-    invalidateSession?: (session: Session) => Promise<void>;
-    createUser?: (profile: InferProfile<T>) => Promise<string>;
-    verifyUser?: (profile: InferProfile<T>) => Promise<string | undefined>;
+export type MonbanCallback<T extends User, U extends Providers<any>> = {
+    createSession: (profile: InferProfile<U>, maxAge: number) => Promise<Session<T>>;
+    refreshSession?: (session: Session<T>, maxAge: number) => Promise<Session<T>>;
+    verifySession?: (session: Session<T>) => Promise<boolean>;
+    invalidateSession?: (session: Session<T>) => Promise<void>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type MonbanOptions<T extends Providers<any>> = {
+export type MonbanOptions<T extends User, U extends Providers<any>> = {
     secret: string;
     maxAge?: number;
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
-    callback?: MonbanCallback<T>;
+    callback: MonbanCallback<T, U>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class Monban<T extends Providers<any>> {
-    protected providers: T;
+export class Monban<T extends User, U extends Providers<any>> {
+    protected providers: U;
     protected secret: string;
     protected maxAge = 60 * 60;
     protected csrf = true;
-    protected callback: MonbanCallback<T> = {};
+    protected callback: MonbanCallback<T, U>;
 
     cookieOptions: cookie.CookieSerializeOptions = {
         path: '/',
@@ -62,12 +64,12 @@ export class Monban<T extends Providers<any>> {
         httpOnly: true,
     };
 
-    constructor(providers: T, options: MonbanOptions<T>) {
+    constructor(providers: U, options: MonbanOptions<T, U>) {
         this.providers = providers;
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
         this.csrf = options.csrf ?? this.csrf;
-        this.callback = options.callback ?? this.callback;
+        this.callback = options.callback;
 
         if (options.cookie !== undefined) {
             this.cookieOptions = {
@@ -77,11 +79,11 @@ export class Monban<T extends Providers<any>> {
         }
     }
 
-    encodeToken(session: Session) {
+    encodeToken(session: Session<T>) {
         const token = jwt.sign(
             {
-                sub: session.userId,
-                sessionId: session.id,
+                sub: session.user.id,
+                session: session,
             },
             this.secret,
             {
@@ -97,7 +99,7 @@ export class Monban<T extends Providers<any>> {
         try {
             const session = jwt.verify(token, this.secret, {
                 algorithms: ['HS256'],
-            }) as TokenPayload;
+            }) as TokenPayload<T>;
 
             return session;
         } catch (e) {
@@ -105,22 +107,13 @@ export class Monban<T extends Providers<any>> {
         }
     }
 
-    async createSession(userId: string) {
-        if (this.callback.createSession !== undefined) {
-            const session = await this.callback.createSession(userId, this.maxAge);
+    async createSession(profile: InferProfile<U>) {
+        const session = await this.callback.createSession(profile, this.maxAge);
 
-            return session;
-        } else {
-            const session: Session = {
-                id: uuidv4(),
-                userId,
-            };
-
-            return session;
-        }
+        return session;
     }
 
-    async refreshSession(session: Session) {
+    async refreshSession(session: Session<T>) {
         if (this.callback.refreshSession !== undefined) {
             const newSession = await this.callback.refreshSession(session, this.maxAge);
 
@@ -130,7 +123,7 @@ export class Monban<T extends Providers<any>> {
         }
     }
 
-    async verifySession(session: Session) {
+    async verifySession(session: Session<T>) {
         if (this.callback.verifySession !== undefined) {
             const verified = await this.callback.verifySession(session);
 
@@ -140,13 +133,13 @@ export class Monban<T extends Providers<any>> {
         }
     }
 
-    async invalidateSession(session: Session) {
+    async invalidateSession(session: Session<T>) {
         if (this.callback.invalidateSession !== undefined) {
             await this.callback.invalidateSession(session);
         }
     }
 
-    async createSessionCookie(session: Session | undefined) {
+    async createSessionCookie(session: Session<T> | undefined) {
         let setCookie: string;
 
         if (session === undefined) {
@@ -163,28 +156,6 @@ export class Monban<T extends Providers<any>> {
         }
 
         return setCookie;
-    }
-
-    async createUser(profile: InferProfile<T>) {
-        if (this.callback.createUser !== undefined) {
-            const userId = await this.callback.createUser(profile);
-
-            return userId;
-        } else {
-            const userId = uuidv4();
-
-            return userId;
-        }
-    }
-
-    async verifyUser(profile: InferProfile<T>) {
-        if (this.callback.verifyUser !== undefined) {
-            const userId = await this.callback.verifyUser(profile);
-
-            return userId;
-        } else {
-            return undefined;
-        }
     }
 
     async createCsrfToken() {
@@ -219,13 +190,8 @@ export class Monban<T extends Providers<any>> {
                 return undefined;
             }
 
-            const session: Session = {
-                id: payload.sessionId,
-                userId: payload.sub,
-            };
-
-            if (await this.verifySession(session)) {
-                return session;
+            if (await this.verifySession(payload.session)) {
+                return payload.session;
             }
 
             return undefined;

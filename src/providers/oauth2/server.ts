@@ -58,7 +58,7 @@ export class OAuth2Provider<T extends Profile, U extends OAuth2Tokens> extends P
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async authenticate(req: Request, callbackUrl: string, monban: Monban<Providers<T>>) {
+    async authenticate(req: Request, callbackUrl: string) {
         const code = new URL(req.url).searchParams.get('code') ?? '';
 
         try {
@@ -90,19 +90,14 @@ export class OAuth2Provider<T extends Profile, U extends OAuth2Tokens> extends P
                 throw new Error('Invalid token');
             }
 
-            const userId = await monban.verifyUser(profile);
-
-            return {
-                profile,
-                userId,
-            };
+            return profile;
         } catch (e) {
             return undefined;
         }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async handleRequest(req: Request, endpoint: string, monban: Monban<Providers<T>>) {
+    async handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<T>>) {
         const app = new Hono().basePath(endpoint);
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
 
@@ -140,17 +135,13 @@ export class OAuth2Provider<T extends Profile, U extends OAuth2Tokens> extends P
                 return c.redirect(`${endpoint}/signin`);
             }
 
-            const auth = await this.authenticate(c.req.raw, callbackUrl, monban);
+            const profile = await this.authenticate(c.req.raw, callbackUrl);
 
-            if (auth === undefined) {
+            if (profile === undefined) {
                 return c.redirect(`${endpoint}/signin`);
             }
 
-            if (auth.userId === undefined) {
-                auth.userId = await monban.createUser(auth.profile);
-            }
-
-            const session = await monban.createSession(auth.userId);
+            const session = await monban.createSession(profile);
             const setCookie = await monban.createSessionCookie(session);
             c.header('set-cookie', setCookie);
 

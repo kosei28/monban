@@ -14,7 +14,7 @@ class Monban {
     secret;
     maxAge = 60 * 60;
     csrf = true;
-    callback = {};
+    callback;
     cookieOptions = {
         path: '/',
         sameSite: 'lax',
@@ -26,7 +26,7 @@ class Monban {
         this.secret = options.secret;
         this.maxAge = options.maxAge ?? this.maxAge;
         this.csrf = options.csrf ?? this.csrf;
-        this.callback = options.callback ?? this.callback;
+        this.callback = options.callback;
         if (options.cookie !== undefined) {
             this.cookieOptions = {
                 ...this.cookieOptions,
@@ -36,8 +36,8 @@ class Monban {
     }
     encodeToken(session) {
         const token = jwt.sign({
-            sub: session.userId,
-            sessionId: session.id,
+            sub: session.user.id,
+            session: session,
         }, this.secret, {
             algorithm: 'HS256',
             expiresIn: this.maxAge,
@@ -55,18 +55,9 @@ class Monban {
             return undefined;
         }
     }
-    async createSession(userId) {
-        if (this.callback.createSession !== undefined) {
-            const session = await this.callback.createSession(userId, this.maxAge);
-            return session;
-        }
-        else {
-            const session = {
-                id: (0, uuid_1.v4)(),
-                userId,
-            };
-            return session;
-        }
+    async createSession(profile) {
+        const session = await this.callback.createSession(profile, this.maxAge);
+        return session;
     }
     async refreshSession(session) {
         if (this.callback.refreshSession !== undefined) {
@@ -108,25 +99,6 @@ class Monban {
         }
         return setCookie;
     }
-    async createUser(profile) {
-        if (this.callback.createUser !== undefined) {
-            const userId = await this.callback.createUser(profile);
-            return userId;
-        }
-        else {
-            const userId = (0, uuid_1.v4)();
-            return userId;
-        }
-    }
-    async verifyUser(profile) {
-        if (this.callback.verifyUser !== undefined) {
-            const userId = await this.callback.verifyUser(profile);
-            return userId;
-        }
-        else {
-            return undefined;
-        }
-    }
     async createCsrfToken() {
         const token = (0, uuid_1.v4)();
         const setCookie = cookie.serialize('_monban_csrf_token', token, {
@@ -154,12 +126,8 @@ class Monban {
             if (payload === undefined) {
                 return undefined;
             }
-            const session = {
-                id: payload.sessionId,
-                userId: payload.sub,
-            };
-            if (await this.verifySession(session)) {
-                return session;
+            if (await this.verifySession(payload.session)) {
+                return payload.session;
             }
             return undefined;
         }

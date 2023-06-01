@@ -19,9 +19,6 @@ export declare class OAuth2Provider<T extends Profile, U extends OAuth2Tokens> e
         getProfile: (tokens: U) => Promise<T | undefined>;
     });
     getAuthUrl(callbackUrl: string, redirectUrl: string, stateId: string): string;
-    authenticate(req: Request, callbackUrl: string, monban: Monban<Providers<T>>): Promise<{
-        profile: T;
-        userId: string | undefined;
-    } | undefined>;
-    handleRequest(req: Request, endpoint: string, monban: Monban<Providers<T>>): Promise<Response>;
+    authenticate(req: Request, callbackUrl: string): Promise<T | undefined>;
+    handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<T>>): Promise<Response>;
 }
