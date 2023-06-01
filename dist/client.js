@@ -12,6 +12,9 @@ class MonbanClient {
     constructor(endpoint, providerClients) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
+        window.addEventListener('focus', async () => {
+            await this.triggerOnSessionChange();
+        });
     }
     async triggerOnSessionChange(callback) {
         const session = await this.getSession();

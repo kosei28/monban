@@ -28,6 +28,10 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
     constructor(endpoint: string, providerClients: U) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
+
+        window.addEventListener('focus', async () => {
+            await this.triggerOnSessionChange();
+        });
     }
 
     protected async triggerOnSessionChange(callback?: OnSessionChangeCallback<T>) {
