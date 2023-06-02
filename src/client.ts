@@ -24,11 +24,16 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
     protected endpoint: string;
     protected providerClients: U;
     protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[] = [];
-    protected addedFocusEventListener = false;
 
     constructor(endpoint: string, providerClients: U) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
+
+        if (typeof window !== 'undefined') {
+            window.addEventListener('focus', () => {
+                this.triggerOnSessionChange();
+            });
+        }
     }
 
     protected async triggerOnSessionChange(callback?: OnSessionChangeCallback<T>) {
@@ -44,13 +49,6 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
     }
 
     onSessionChange(callback: OnSessionChangeCallback<T>) {
-        if (!this.addedFocusEventListener) {
-            this.addedFocusEventListener = true;
-            window.addEventListener('focus', () => {
-                this.triggerOnSessionChange();
-            });
-        }
-
         this.onSessionChangeCallbacks.push(callback);
         this.triggerOnSessionChange(callback);
 

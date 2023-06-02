@@ -17,13 +17,10 @@ describe('MonbanClient', () => {
     let monbanClient: MonbanClient<TestUser, typeof providerClients>;
     let triggerOnSessionChange: OnSessionChangeCallback<TestUser>;
 
-    let eventListener: jest.Mock;
-
     beforeEach(async () => {
         globalThis.fetch = async () => new Response();
-        eventListener = jest.fn();
         globalThis.window = {
-            addEventListener: eventListener,
+            addEventListener: jest.fn(),
         } as unknown as Window & typeof globalThis;
 
         monbanClient = new MonbanClient('https://example.com', providerClients);
@@ -39,15 +36,6 @@ describe('MonbanClient', () => {
             monbanClient.onSessionChange(callback);
 
             expect(triggerOnSessionChange).toHaveBeenCalledTimes(1);
-        });
-
-        test('should add only one focus event listener', () => {
-            const callback = jest.fn();
-            monbanClient.onSessionChange(callback);
-            monbanClient.onSessionChange(callback);
-
-            expect(eventListener).toHaveBeenCalledTimes(1);
-            expect(triggerOnSessionChange).toHaveBeenCalledTimes(2);
         });
 
         test('should remove callback when unsubscribe is called', () => {

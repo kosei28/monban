@@ -17,7 +17,6 @@ export declare class MonbanClient<T extends User, U extends ProviderClients> {
     protected endpoint: string;
     protected providerClients: U;
     protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[];
-    protected addedFocusEventListener: boolean;
     constructor(endpoint: string, providerClients: U);
     protected triggerOnSessionChange(callback?: OnSessionChangeCallback<T>): Promise<void>;
     onSessionChange(callback: OnSessionChangeCallback<T>): () => void;

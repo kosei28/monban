@@ -9,10 +9,14 @@ class MonbanClient {
     endpoint;
     providerClients;
     onSessionChangeCallbacks = [];
-    addedFocusEventListener = false;
     constructor(endpoint, providerClients) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
+        if (typeof window !== 'undefined') {
+            window.addEventListener('focus', () => {
+                this.triggerOnSessionChange();
+            });
+        }
     }
     async triggerOnSessionChange(callback) {
         const session = await this.getSession();
@@ -26,12 +30,6 @@ class MonbanClient {
         }
     }
     onSessionChange(callback) {
-        if (!this.addedFocusEventListener) {
-            this.addedFocusEventListener = true;
-            window.addEventListener('focus', () => {
-                this.triggerOnSessionChange();
-            });
-        }
         this.onSessionChangeCallbacks.push(callback);
         this.triggerOnSessionChange(callback);
         const unsubscribe = () => {
