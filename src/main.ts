@@ -12,11 +12,11 @@ export type Session<T extends User> = {
     user: T;
 };
 
-export abstract class Adapter<T extends User> {
-    abstract createSession(session: Session<T>, maxAge: number): Promise<void>;
-    abstract refreshSession(session: Session<T>, maxAge: number): Promise<Session<T>>;
-    abstract verifySession(session: Session<T>): Promise<boolean>;
-    abstract invalidateSession(session: Session<T>): Promise<void>;
+export abstract class Adapter {
+    abstract createSession(session: Session<User>, maxAge: number): Promise<void>;
+    abstract verifySession(session: Session<User>): Promise<boolean>;
+    abstract extendSession(session: Session<User>): Promise<void>;
+    abstract invalidateSession(sessionId: string): Promise<void>;
     abstract invalidateUserSessions(userId: string): Promise<void>;
 }
 
@@ -42,7 +42,7 @@ export type InferProfile<T> = T extends Providers<infer U> ? U : never;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type MonbanCallbacks<T extends User, U extends Providers<any>> = {
-    session: (profile: InferProfile<U>) => Promise<Session<T>>;
+    authenticate: (profile: InferProfile<U>) => Promise<T>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -51,7 +51,7 @@ export type MonbanOptions<T extends User, U extends Providers<any>> = {
     maxAge?: number;
     csrf?: boolean;
     cookie?: cookie.CookieSerializeOptions;
-    adapter?: Adapter<T>;
+    adapter?: Adapter;
     callbacks: MonbanCallbacks<T, U>;
 };
 
@@ -61,7 +61,7 @@ export class Monban<T extends User, U extends Providers<any>> {
     protected secret: string;
     protected maxAge = 60 * 60;
     protected csrf = true;
-    protected adapter?: Adapter<T>;
+    protected adapter?: Adapter;
     protected callbacks: MonbanCallbacks<T, U>;
 
     cookieOptions: cookie.CookieSerializeOptions = {
@@ -116,23 +116,17 @@ export class Monban<T extends User, U extends Providers<any>> {
     }
 
     async createSession(profile: InferProfile<U>) {
-        const session = await this.callbacks.session(profile);
+        const user = await this.callbacks.authenticate(profile);
+        const session = {
+            id: uuidv4(),
+            user,
+        };
 
         if (this.adapter !== undefined) {
             await this.adapter.createSession(session, this.maxAge);
         }
 
         return session;
-    }
-
-    async refreshSession(session: Session<T>) {
-        if (this.adapter !== undefined) {
-            const newSession = await this.adapter.refreshSession(session, this.maxAge);
-
-            return newSession;
-        } else {
-            return session;
-        }
     }
 
     async verifySession(session: Session<T>) {
@@ -145,9 +139,15 @@ export class Monban<T extends User, U extends Providers<any>> {
         }
     }
 
-    async invalidateSession(session: Session<T>) {
+    async extendSession(session: Session<T>) {
         if (this.adapter !== undefined) {
-            await this.adapter.invalidateSession(session);
+            await this.adapter.extendSession(session);
+        }
+    }
+
+    async invalidateSession(sessionId: string) {
+        if (this.adapter !== undefined) {
+            await this.adapter.invalidateSession(sessionId);
         }
     }
 
@@ -236,7 +236,7 @@ export class Monban<T extends User, U extends Providers<any>> {
             const session = await this.isAuthenticated(c.req.raw);
 
             if (session !== undefined) {
-                await this.invalidateSession(session);
+                await this.invalidateSession(session.id);
             }
 
             const setCookie = await this.createSessionCookie(undefined);
@@ -254,11 +254,11 @@ export class Monban<T extends User, U extends Providers<any>> {
                 return c.json(undefined);
             }
 
-            const newSession = await this.refreshSession(session);
-            const setCookie = await this.createSessionCookie(newSession);
+            await this.extendSession(session);
+            const setCookie = await this.createSessionCookie(session);
             c.header('set-cookie', setCookie);
 
-            return c.json(newSession);
+            return c.json(session);
         });
 
         app.get('/csrf', async (c) => {
