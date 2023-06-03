@@ -1,5 +1,5 @@
 import * as cookie from 'cookie';
-import { Monban, Provider, Session } from '../src/main';
+import { Monban, Provider } from '../src/main';
 
 describe('Monban', () => {
     type TestUser = {
@@ -13,16 +13,13 @@ describe('Monban', () => {
     const options = {
         secret: 'secret',
         callbacks: {
-            session: async (profile: TestProfile) => {
-                const session: Session<TestUser> = {
-                    id: 'test_session',
-                    user: {
-                        id: 'test_user',
-                        profile,
-                    },
+            authenticate: async (profile: TestProfile) => {
+                const user: TestUser = {
+                    id: 'test_user',
+                    profile,
                 };
 
-                return session;
+                return user;
             },
         },
     };
