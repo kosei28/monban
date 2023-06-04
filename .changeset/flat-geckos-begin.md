@@ -1,0 +1,5 @@
+---
+'monban': minor
+---
+
+first release
