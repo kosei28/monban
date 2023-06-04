@@ -23,7 +23,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "rimraf dist && tsc",
+        "build": "npm run build -w monban && rimraf dist && tsc",
         "prepublishOnly": "npm run build"
     },
     "devDependencies": {
