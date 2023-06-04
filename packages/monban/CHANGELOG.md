@@ -1,5 +1,11 @@
 # monban
 
+## 0.1.2
+
+### Patch Changes
+
+-   0ad78b2: use jose instead of jsonwebtoken
+
 ## 0.1.1
 
 ### Patch Changes
