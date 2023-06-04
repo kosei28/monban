@@ -18,6 +18,18 @@ export type ProviderClientMethods = KeyOfSpecificTypeValue<ProviderClient, ((...
 
 export type ProviderClients = { [key: string]: ProviderClient };
 
+export type ProviderClientMethodProxy<
+    T extends ProviderClients,
+    U extends ProviderClientMethods,
+> = OmitBySpecificTypeValue<
+    {
+        [K in keyof T]: T[K][U] extends (options: ProviderClientOptions, ...args: infer P) => infer R
+            ? (...args: P) => R
+            : undefined;
+    },
+    undefined
+>;
+
 export type OnSessionChangeCallback<T extends User> = (session: Session<T> | undefined) => void;
 
 export class MonbanClient<T extends User, U extends ProviderClients> {
@@ -25,9 +37,12 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
     protected providerClients: U;
     protected onSessionChangeCallbacks: OnSessionChangeCallback<T>[] = [];
 
+    signIn: ProviderClientMethodProxy<U, 'signIn'>;
+
     constructor(endpoint: string, providerClients: U) {
         this.endpoint = endpoint;
         this.providerClients = providerClients;
+        this.signIn = this.createProviderClientMethodProxy('signIn');
 
         if (typeof window !== 'undefined') {
             window.addEventListener('focus', () => {
@@ -36,30 +51,7 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
         }
     }
 
-    protected async triggerOnSessionChange(callback?: OnSessionChangeCallback<T>) {
-        const session = await this.getSession();
-
-        if (callback !== undefined) {
-            callback(session);
-        } else {
-            this.onSessionChangeCallbacks.forEach((callback) => {
-                callback(session);
-            });
-        }
-    }
-
-    onSessionChange(callback: OnSessionChangeCallback<T>) {
-        this.onSessionChangeCallbacks.push(callback);
-        this.triggerOnSessionChange(callback);
-
-        const unsubscribe = () => {
-            this.onSessionChangeCallbacks = this.onSessionChangeCallbacks.filter((c) => c !== callback);
-        };
-
-        return unsubscribe;
-    }
-
-    protected createProviderMethodProxy<V extends ProviderClientMethods>(method: V) {
+    protected createProviderClientMethodProxy<V extends ProviderClientMethods>(method: V) {
         const proxy = new Proxy(
             {},
             {
@@ -92,19 +84,33 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
                     };
                 },
             },
-        ) as OmitBySpecificTypeValue<
-            {
-                [K in keyof U]: U[K][V] extends (options: ProviderClientOptions, ...args: infer P) => infer R
-                    ? (...args: P) => R
-                    : undefined;
-            },
-            undefined
-        >;
+        ) as ProviderClientMethodProxy<U, V>;
 
         return proxy;
     }
 
-    signIn = this.createProviderMethodProxy('signIn');
+    protected async triggerOnSessionChange(callback?: OnSessionChangeCallback<T>) {
+        const session = await this.getSession();
+
+        if (callback !== undefined) {
+            callback(session);
+        } else {
+            this.onSessionChangeCallbacks.forEach((callback) => {
+                callback(session);
+            });
+        }
+    }
+
+    onSessionChange(callback: OnSessionChangeCallback<T>) {
+        this.onSessionChangeCallbacks.push(callback);
+        this.triggerOnSessionChange(callback);
+
+        const unsubscribe = () => {
+            this.onSessionChangeCallbacks = this.onSessionChangeCallbacks.filter((c) => c !== callback);
+        };
+
+        return unsubscribe;
+    }
 
     async signOut() {
         await fetch(`${this.endpoint}/signout`);
