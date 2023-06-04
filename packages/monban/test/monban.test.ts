@@ -1,5 +1,5 @@
 import * as cookie from 'cookie';
-import { Monban, Provider } from '../src/main';
+import { Monban, Provider, Session } from '../src/main';
 
 describe('Monban', () => {
     type TestUser = {
@@ -40,7 +40,7 @@ describe('Monban', () => {
             const monban = new Monban(providers, options);
             const anotherMonban = new Monban(providers, { ...options, secret: 'another_secret' });
 
-            const session = await monban.createSession({ provider: 'test_provider' });
+            const session = (await monban.createSession({ provider: 'test_provider' })) as Session<TestUser>;
             const token = await anotherMonban.encodeToken(session);
             const req = new Request('https://example.com', {
                 headers: new Headers({
@@ -56,7 +56,7 @@ describe('Monban', () => {
             const providers = {};
             const monban = new Monban(providers, options);
 
-            const session = await monban.createSession({ provider: 'test_provider' });
+            const session = (await monban.createSession({ provider: 'test_provider' })) as Session<TestUser>;
             const token = await monban.encodeToken(session);
             const req = new Request('https://example.com', {
                 method: 'POST',
@@ -77,7 +77,7 @@ describe('Monban', () => {
             const providers = {};
             const monban = new Monban(providers, options);
 
-            const session = await monban.createSession({ provider: 'test_provider' });
+            const session = (await monban.createSession({ provider: 'test_provider' })) as Session<TestUser>;
             const token = await monban.encodeToken(session);
             const req = new Request('https://example.com', {
                 headers: new Headers({
@@ -139,7 +139,7 @@ describe('Monban', () => {
             const providers = {};
             const monban = new Monban(providers, options);
 
-            const session = await monban.createSession({ provider: 'test_provider' });
+            const session = (await monban.createSession({ provider: 'test_provider' })) as Session<TestUser>;
             const token = await monban.encodeToken(session);
             const req = new Request('https://example.com/session', {
                 headers: new Headers({

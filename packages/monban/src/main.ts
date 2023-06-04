@@ -40,7 +40,7 @@ export type InferProfile<T> = T extends Providers<infer U> ? U : never;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type MonbanCallbacks<T extends User, U extends Providers<any>> = {
-    authenticate: (profile: InferProfile<U>) => Promise<T>;
+    authenticate: (profile: InferProfile<U>) => Promise<T> | undefined;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -109,6 +109,11 @@ export class Monban<T extends User, U extends Providers<any>> {
 
     async createSession(profile: InferProfile<U>) {
         const user = await this.callbacks.authenticate(profile);
+
+        if (user === undefined) {
+            return undefined;
+        }
+
         const session = {
             id: uuidv4(),
             user,
