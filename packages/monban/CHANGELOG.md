@@ -1,5 +1,11 @@
 # monban
 
+## 0.1.5
+
+### Patch Changes
+
+-   a11c1e6: add supported node version to package.json
+
 ## 0.1.4
 
 ### Patch Changes
