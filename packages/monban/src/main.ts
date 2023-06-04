@@ -1,5 +1,4 @@
 import * as cookie from 'cookie';
-import { Hono } from 'hono';
 import * as jose from 'jose';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -214,61 +213,74 @@ export class Monban<T extends User, U extends Providers<any>> {
     }
 
     async handleRequest(req: Request, endpoint: string) {
-        const app = new Hono().basePath(endpoint);
+        const url = new URL(req.url);
 
-        app.get('/providers/:provider/*', async (c) => {
-            const providerName = c.req.param('provider');
+        if (!url.pathname.startsWith(endpoint)) {
+            return new Response(undefined, {
+                status: 404,
+            });
+        }
+
+        const pathnames = url.pathname
+            .slice(endpoint.length)
+            .split('/')
+            .filter((pathname) => pathname !== '');
+
+        if (pathnames[0] === 'providers') {
+            const providerName = pathnames[1];
             const provider = this.providers[providerName];
 
             if (provider === undefined) {
-                return c.json(undefined, 404);
+                return new Response(undefined, {
+                    status: 404,
+                });
             }
 
-            const res = provider.handleRequest(c.req.raw, `${endpoint}/providers/${providerName}`, this);
+            const res = provider.handleRequest(req, `${endpoint}/providers/${providerName}`, this);
 
             return res;
-        });
-
-        app.get('/signout', async (c) => {
-            const session = await this.isAuthenticated(c.req.raw);
+        } else if (pathnames[0] === 'signout' && req.method === 'GET') {
+            const session = await this.isAuthenticated(req);
 
             if (session !== undefined) {
                 await this.invalidateSession(session.id);
             }
 
             const setCookie = await this.createSessionCookie(undefined);
-            c.header('set-cookie', setCookie);
 
-            return c.json(undefined);
-        });
-
-        app.get('/session', async (c) => {
-            const session = await this.isAuthenticated(c.req.raw);
+            return new Response(undefined, {
+                headers: {
+                    'set-cookie': setCookie,
+                },
+            });
+        } else if (pathnames[0] === 'session' && req.method === 'GET') {
+            const session = await this.isAuthenticated(req);
 
             if (session === undefined) {
-                c.status(401);
-
-                return c.json(undefined);
+                return new Response(undefined, {
+                    status: 401,
+                });
             }
 
             await this.extendSession(session);
             const setCookie = await this.createSessionCookie(session);
-            c.header('set-cookie', setCookie);
-
-            return c.json(session);
-        });
-
-        app.get('/csrf', async (c) => {
-            const { token, setCookie } = await this.createCsrfToken();
-            c.header('set-cookie', setCookie);
-
-            return c.json({
-                token,
+            return new Response(JSON.stringify(session), {
+                headers: {
+                    'set-cookie': setCookie,
+                },
             });
-        });
+        } else if (pathnames[0] === 'csrf' && req.method === 'GET') {
+            const { token, setCookie } = this.createCsrfToken();
 
-        const res = await app.fetch(req);
-
-        return res;
+            return new Response(JSON.stringify({ token }), {
+                headers: {
+                    'set-cookie': setCookie,
+                },
+            });
+        } else {
+            return new Response(undefined, {
+                status: 404,
+            });
+        }
     }
 }

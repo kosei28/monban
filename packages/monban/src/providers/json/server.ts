@@ -1,4 +1,3 @@
-import { Hono } from 'hono';
 import { Monban, Provider } from '../../main';
 
 export type JsonProfile<T> = {
@@ -8,9 +7,20 @@ export type JsonProfile<T> = {
 export class JsonProvider<T> extends Provider<JsonProfile<T>> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async handleRequest(req: Request, endpoint: string, monban: Monban<any, any>) {
-        const app = new Hono().basePath(endpoint);
+        const url = new URL(req.url);
 
-        app.post('/signin', async (c) => {
+        if (!url.pathname.startsWith(endpoint)) {
+            return new Response(undefined, {
+                status: 404,
+            });
+        }
+
+        const pathnames = url.pathname
+            .slice(endpoint.length)
+            .split('/')
+            .filter((pathname) => pathname !== '');
+
+        if (pathnames[0] === 'signin' && req.method === 'POST') {
             const profile = {
                 provider: 'json',
                 ...(await req.json()),
@@ -18,13 +28,16 @@ export class JsonProvider<T> extends Provider<JsonProfile<T>> {
 
             const session = await monban.createSession(profile);
             const setCookie = await monban.createSessionCookie(session);
-            c.header('set-cookie', setCookie);
 
-            return c.json(undefined);
-        });
-
-        const res = await app.fetch(req);
-
-        return res;
+            return new Response(undefined, {
+                headers: {
+                    'set-cookie': setCookie,
+                },
+            });
+        } else {
+            return new Response(undefined, {
+                status: 404,
+            });
+        }
     }
 }

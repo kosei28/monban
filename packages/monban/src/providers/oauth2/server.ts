@@ -1,5 +1,4 @@
 import * as cookie from 'cookie';
-import { Hono } from 'hono';
 import { v4 as uuidv4 } from 'uuid';
 import { Monban, Provider, type Profile, type Providers } from '../../main';
 
@@ -98,12 +97,23 @@ export class OAuth2Provider<T extends Profile, U extends OAuth2Tokens> extends P
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async handleRequest(req: Request, endpoint: string, monban: Monban<any, Providers<T>>) {
-        const app = new Hono().basePath(endpoint);
+        const url = new URL(req.url);
+
+        if (!url.pathname.startsWith(endpoint)) {
+            return new Response(undefined, {
+                status: 404,
+            });
+        }
+
+        const pathnames = url.pathname
+            .slice(endpoint.length)
+            .split('/')
+            .filter((pathname) => pathname !== '');
         const callbackUrl = `${new URL(req.url).origin}${endpoint}/callback`;
 
-        app.get('/signin', async (c) => {
-            const location = c.req.query('location') ?? new URL(c.req.url).origin;
-            const redirectUrl = c.req.query('redirect') ?? location;
+        if (pathnames[0] === 'signin' && req.method === 'GET') {
+            const location = url.searchParams.get('location') ?? url.origin;
+            const redirectUrl = url.searchParams.get('redirect') ?? location;
             const stateId = uuidv4();
             const authUrl = this.getAuthUrl(callbackUrl, redirectUrl, stateId);
 
@@ -111,45 +121,64 @@ export class OAuth2Provider<T extends Profile, U extends OAuth2Tokens> extends P
                 ...monban.cookieOptions,
                 maxAge: undefined,
             });
-            c.header('set-cookie', setCookie);
 
-            return c.redirect(authUrl);
-        });
-
-        app.get('/callback', async (c) => {
+            return new Response(undefined, {
+                status: 302,
+                headers: {
+                    'set-cookie': setCookie,
+                    location: authUrl,
+                },
+            });
+        } else if (pathnames[0] === 'callback' && req.method === 'GET') {
             let authState: {
                 stateId: string;
                 redirect: string;
             };
 
             try {
-                const authStateStr = c.req.query('state') ?? '';
+                const authStateStr = url.searchParams.get('state') ?? '';
                 authState = JSON.parse(decodeURIComponent(authStateStr));
 
-                const sessionState = c.req.cookie('_monban_oauth2_state');
+                const cookieHeader = req.headers.get('cookie');
+                const { _monban_oauth2_state: sessionState } = cookie.parse(cookieHeader ?? '');
 
                 if (authState.stateId !== sessionState) {
                     throw new Error('Invalid state');
                 }
             } catch (e) {
-                return c.redirect(`${endpoint}/signin`);
+                return new Response(undefined, {
+                    status: 302,
+                    headers: {
+                        location: `${endpoint}/signin`,
+                    },
+                });
             }
 
-            const profile = await this.authenticate(c.req.raw, callbackUrl);
+            const profile = await this.authenticate(req, callbackUrl);
 
             if (profile === undefined) {
-                return c.redirect(`${endpoint}/signin`);
+                return new Response(undefined, {
+                    status: 302,
+                    headers: {
+                        location: `${endpoint}/signin`,
+                    },
+                });
             }
 
             const session = await monban.createSession(profile);
             const setCookie = await monban.createSessionCookie(session);
-            c.header('set-cookie', setCookie);
 
-            return c.redirect(authState.redirect);
-        });
-
-        const res = await app.fetch(req);
-
-        return res;
+            return new Response(undefined, {
+                status: 302,
+                headers: {
+                    'set-cookie': setCookie,
+                    location: authState.redirect,
+                },
+            });
+        } else {
+            return new Response(undefined, {
+                status: 404,
+            });
+        }
     }
 }
