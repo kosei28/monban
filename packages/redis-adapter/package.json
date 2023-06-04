@@ -1,0 +1,38 @@
+{
+    "name": "@monban/redis-adapter",
+    "version": "0.0.1",
+    "description": "Redis adapter for Monban",
+    "keywords": [
+        "monban",
+        "authentication",
+        "auth",
+        "login",
+        "session",
+        "redis"
+    ],
+    "author": "kosei28",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kosei28/monban",
+        "directory": "packages/redis-adapter"
+    },
+    "main": "dist/main.js",
+    "types": "dist/main.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "rimraf dist && tsc",
+        "prepublishOnly": "npm run build"
+    },
+    "devDependencies": {
+        "ioredis": "^5.3.2",
+        "monban": "^0.1.1",
+        "typescript": "^5.0.4"
+    },
+    "peerDependencies": {
+        "ioredis": "^5.3.0",
+        "monban": "^0.1.1"
+    }
+}
