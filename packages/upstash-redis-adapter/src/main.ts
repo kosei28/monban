@@ -1,7 +1,7 @@
 import type { Redis } from '@upstash/redis';
 import type { Adapter, Session, User } from 'monban';
 
-export class RedisAdapter implements Adapter {
+export class UpstashRedisAdapter implements Adapter {
     protected sessionRedis: Redis;
     protected userSessionRedis: Redis;
 
