@@ -1,0 +1,39 @@
+{
+    "name": "@monban/upstash-redis-adapter",
+    "version": "0.0.1",
+    "description": "Upstash Redis adapter for Monban",
+    "keywords": [
+        "monban",
+        "authentication",
+        "auth",
+        "login",
+        "session",
+        "redis",
+        "upstash"
+    ],
+    "author": "kosei28",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kosei28/monban",
+        "directory": "packages/upstash-redis-adapter"
+    },
+    "main": "dist/main.js",
+    "types": "dist/main.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "npm run build -w monban && rimraf dist && tsc",
+        "prepublishOnly": "npm run build"
+    },
+    "devDependencies": {
+        "@upstash/redis": "^1.21.0",
+        "monban": "^0.1.1",
+        "typescript": "^5.0.4"
+    },
+    "peerDependencies": {
+        "@upstash/redis": "^1.21.0",
+        "monban": "^0.1.1"
+    }
+}
