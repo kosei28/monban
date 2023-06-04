@@ -14,8 +14,8 @@ export type Session<T extends User> = {
 
 export abstract class Adapter {
     abstract createSession(session: Session<User>, maxAge: number): Promise<void>;
-    abstract verifySession(session: Session<User>): Promise<boolean>;
-    abstract extendSession(session: Session<User>): Promise<void>;
+    abstract verifySession(sessionId: string): Promise<boolean>;
+    abstract extendSession(sessionId: string, maxAge: number): Promise<void>;
     abstract invalidateSession(sessionId: string): Promise<void>;
     abstract invalidateUserSessions(userId: string): Promise<void>;
 }
@@ -131,7 +131,7 @@ export class Monban<T extends User, U extends Providers<any>> {
 
     async verifySession(session: Session<T>) {
         if (this.adapter !== undefined) {
-            const verified = await this.adapter.verifySession(session);
+            const verified = await this.adapter.verifySession(session.id);
 
             return verified;
         } else {
@@ -141,7 +141,7 @@ export class Monban<T extends User, U extends Providers<any>> {
 
     async extendSession(session: Session<T>) {
         if (this.adapter !== undefined) {
-            await this.adapter.extendSession(session);
+            await this.adapter.extendSession(session.id, this.maxAge);
         }
     }
 
