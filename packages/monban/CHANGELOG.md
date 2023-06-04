@@ -1,5 +1,12 @@
 # monban
 
+## 0.1.4
+
+### Patch Changes
+
+-   594ed4f: remove hono
+-   9a3b553: add undefined type to return value of authenticate callback
+
 ## 0.1.3
 
 ### Patch Changes
