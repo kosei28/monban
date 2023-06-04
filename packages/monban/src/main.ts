@@ -1,6 +1,6 @@
 import * as cookie from 'cookie';
 import { Hono } from 'hono';
-import * as jwt from 'jsonwebtoken';
+import * as jose from 'jose';
 import { v4 as uuidv4 } from 'uuid';
 
 export type User = {
@@ -20,11 +20,9 @@ export abstract class Adapter {
     abstract invalidateUserSessions(userId: string): Promise<void>;
 }
 
-export type TokenPayload<T extends User> = {
+export type TokenPayload<T extends User> = jose.JWTPayload & {
     sub?: string;
     session: Session<T>;
-    iat: number;
-    exp: number;
 };
 
 export type Profile = {
@@ -87,29 +85,23 @@ export class Monban<T extends User, U extends Providers<any>> {
         }
     }
 
-    encodeToken(session: Session<T>) {
-        const token = jwt.sign(
-            {
-                sub: session.user.id,
-                session: session,
-            },
-            this.secret,
-            {
-                algorithm: 'HS256',
-                expiresIn: this.maxAge,
-            },
-        );
+    async encodeToken(session: Session<T>) {
+        const secret = new TextEncoder().encode(this.secret);
+        const token = await new jose.SignJWT({ sub: session.user.id, session })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setExpirationTime(`${this.maxAge}s`)
+            .sign(secret);
 
         return token;
     }
 
-    decodeToken(token: string) {
+    async decodeToken(token: string) {
         try {
-            const session = jwt.verify(token, this.secret, {
-                algorithms: ['HS256'],
-            }) as TokenPayload<T>;
+            const secret = new TextEncoder().encode(this.secret);
+            const decodedToken = await jose.jwtVerify(token, secret);
+            const payload = decodedToken.payload as TokenPayload<T>;
 
-            return session;
+            return payload;
         } catch (e) {
             return undefined;
         }
@@ -157,7 +149,7 @@ export class Monban<T extends User, U extends Providers<any>> {
         }
     }
 
-    createSessionCookie(session: Session<T> | undefined) {
+    async createSessionCookie(session: Session<T> | undefined) {
         let setCookie: string;
 
         if (session === undefined) {
@@ -166,7 +158,7 @@ export class Monban<T extends User, U extends Providers<any>> {
                 maxAge: 0,
             });
         } else {
-            const token = this.encodeToken(session);
+            const token = await this.encodeToken(session);
             setCookie = cookie.serialize('_monban_token', token, {
                 ...this.cookieOptions,
                 maxAge: this.maxAge,
@@ -202,7 +194,7 @@ export class Monban<T extends User, U extends Providers<any>> {
         if (token === undefined) {
             return undefined;
         } else {
-            const payload = this.decodeToken(token);
+            const payload = await this.decodeToken(token);
 
             if (payload === undefined) {
                 return undefined;

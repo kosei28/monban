@@ -41,7 +41,7 @@ describe('Monban', () => {
             const anotherMonban = new Monban(providers, { ...options, secret: 'another_secret' });
 
             const session = await monban.createSession({ provider: 'test_provider' });
-            const token = anotherMonban.encodeToken(session);
+            const token = await anotherMonban.encodeToken(session);
             const req = new Request('https://example.com', {
                 headers: new Headers({
                     cookie: cookie.serialize('_monban_token', token),
@@ -57,7 +57,7 @@ describe('Monban', () => {
             const monban = new Monban(providers, options);
 
             const session = await monban.createSession({ provider: 'test_provider' });
-            const token = monban.encodeToken(session);
+            const token = await monban.encodeToken(session);
             const req = new Request('https://example.com', {
                 method: 'POST',
                 headers: new Headers({
@@ -78,7 +78,7 @@ describe('Monban', () => {
             const monban = new Monban(providers, options);
 
             const session = await monban.createSession({ provider: 'test_provider' });
-            const token = monban.encodeToken(session);
+            const token = await monban.encodeToken(session);
             const req = new Request('https://example.com', {
                 headers: new Headers({
                     cookie: `${cookie.serialize('_monban_token', token)}; ${cookie.serialize(
@@ -140,7 +140,7 @@ describe('Monban', () => {
             const monban = new Monban(providers, options);
 
             const session = await monban.createSession({ provider: 'test_provider' });
-            const token = monban.encodeToken(session);
+            const token = await monban.encodeToken(session);
             const req = new Request('https://example.com/session', {
                 headers: new Headers({
                     cookie: cookie.serialize('_monban_token', token),
