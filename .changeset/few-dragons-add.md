@@ -1,5 +1,0 @@
----
-'monban': patch
----
-
-remove hono
