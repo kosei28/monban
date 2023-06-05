@@ -1,6 +1,6 @@
 {
     "name": "@monban/redis-adapter",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "description": "Redis adapter for Monban",
     "keywords": [
         "monban",
@@ -28,11 +28,11 @@
     },
     "devDependencies": {
         "ioredis": "^5.3.2",
-        "monban": "^0.1.1",
+        "monban": "^0.2.0",
         "typescript": "^5.0.4"
     },
     "peerDependencies": {
         "ioredis": "^5.3.0",
-        "monban": "^0.1.1"
+        "monban": "^0.2.0"
     }
 }

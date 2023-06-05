@@ -1,6 +1,6 @@
 {
     "name": "@monban/upstash-redis-adapter",
-    "version": "0.1.1",
+    "version": "1.0.0",
     "description": "Upstash Redis adapter for Monban",
     "keywords": [
         "monban",
@@ -29,11 +29,11 @@
     },
     "devDependencies": {
         "@upstash/redis": "^1.21.0",
-        "monban": "^0.1.1",
+        "monban": "^0.2.0",
         "typescript": "^5.0.4"
     },
     "peerDependencies": {
         "@upstash/redis": "^1.21.0",
-        "monban": "^0.1.1"
+        "monban": "^0.2.0"
     }
 }
