@@ -1,5 +1,11 @@
 # monban
 
+## 0.1.6
+
+### Patch Changes
+
+-   a3b0a75: fix getSession to retry when fetch failed
+
 ## 0.1.5
 
 ### Patch Changes
