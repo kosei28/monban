@@ -13,7 +13,7 @@ describe('Monban', () => {
     const options = {
         secret: 'secret',
         callbacks: {
-            authenticate: async (profile: TestProfile) => {
+            getUser: async (profile: TestProfile) => {
                 const user: TestUser = {
                     id: 'test_user',
                     profile,
