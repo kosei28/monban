@@ -117,9 +117,20 @@ export class MonbanClient<T extends User, U extends ProviderClients> {
         this.triggerOnSessionChange();
     }
 
-    async getSession() {
+    async getSession(isRetry = false): Promise<Session<T> | undefined> {
+        let res: Response;
+
         try {
-            const res = await fetch(`${this.endpoint}/session`);
+            res = await fetch(`${this.endpoint}/session`);
+        } catch (e) {
+            if (!isRetry) {
+                return await this.getSession(true);
+            }
+
+            return undefined;
+        }
+
+        try {
             const session = (await res.json()) as Session<T>;
 
             return session;
