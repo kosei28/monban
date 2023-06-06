@@ -186,7 +186,7 @@ export class Monban<T extends User, U extends Providers<any>> {
         };
     }
 
-    async isAuthenticated(req: Request) {
+    async getSession(req: Request) {
         const csrfTokenHeader = req.headers.get('x-monban-csrf-token');
         const cookieHeader = req.headers.get('cookie');
         const { _monban_token: token, _monban_csrf_token: csrfToken } = cookie.parse(cookieHeader ?? '');
@@ -240,7 +240,7 @@ export class Monban<T extends User, U extends Providers<any>> {
 
             return res;
         } else if (pathnames[0] === 'signout' && req.method === 'GET') {
-            const session = await this.isAuthenticated(req);
+            const session = await this.getSession(req);
 
             if (session !== undefined) {
                 await this.invalidateSession(session.id);
@@ -254,7 +254,7 @@ export class Monban<T extends User, U extends Providers<any>> {
                 },
             });
         } else if (pathnames[0] === 'session' && req.method === 'GET') {
-            const session = await this.isAuthenticated(req);
+            const session = await this.getSession(req);
 
             if (session === undefined) {
                 return new Response(undefined, {
@@ -264,6 +264,7 @@ export class Monban<T extends User, U extends Providers<any>> {
 
             await this.extendSession(session);
             const setCookie = await this.createSessionCookie(session);
+
             return new Response(JSON.stringify(session), {
                 headers: {
                     'set-cookie': setCookie,

@@ -31,7 +31,7 @@ describe('Monban', () => {
 
             const req = new Request('https://example.com');
 
-            const result = await monban.isAuthenticated(req);
+            const result = await monban.getSession(req);
             expect(result).toBeUndefined();
         });
 
@@ -48,7 +48,7 @@ describe('Monban', () => {
                 }),
             });
 
-            const result = await monban.isAuthenticated(req);
+            const result = await monban.getSession(req);
             expect(result).toBeUndefined();
         });
 
@@ -69,11 +69,11 @@ describe('Monban', () => {
                 }),
             });
 
-            const result = await monban.isAuthenticated(req);
+            const result = await monban.getSession(req);
             expect(result).toBeUndefined();
         });
 
-        test('should return the payload if token and csrf token are valid', async () => {
+        test('should return the session if token and csrf token are valid', async () => {
             const providers = {};
             const monban = new Monban(providers, options);
 
@@ -89,7 +89,7 @@ describe('Monban', () => {
                 }),
             });
 
-            const result = await monban.isAuthenticated(req);
+            const result = await monban.getSession(req);
             expect(result).toEqual(session);
         });
     });
@@ -125,7 +125,7 @@ describe('Monban', () => {
             const monban = new Monban(providers, options);
             const req = new Request('https://example.com/signout');
 
-            monban.isAuthenticated = jest.fn().mockResolvedValue({ id: 'sessionId test', userId: 'test_user' });
+            monban.getSession = jest.fn().mockResolvedValue({ id: 'sessionId test', userId: 'test_user' });
 
             const res = await monban.handleRequest(req, '/');
 
