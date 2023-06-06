@@ -11,8 +11,10 @@
         "release": "changeset publish"
     },
     "lint-staged": {
+        "*.ts": [
+            "eslint"
+        ],
         "*": [
-            "eslint",
             "prettier --write"
         ]
     },
