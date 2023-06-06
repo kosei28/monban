@@ -54,8 +54,7 @@
     ],
     "scripts": {
         "build": "rimraf dist && tsc",
-        "test": "jest",
-        "prepublishOnly": "npm run test && npm run build"
+        "test": "jest"
     },
     "devDependencies": {
         "@types/cookie": "^0.5.1",

@@ -4,9 +4,11 @@
     "author": "kosei28",
     "license": "MIT",
     "scripts": {
+        "prepare": "husky install",
+        "test": "turbo test",
+        "build": "turbo build",
         "lint": "eslint .",
         "format": "prettier --write .",
-        "prepare": "husky install",
         "precommit": "lint-staged",
         "release": "changeset publish"
     },
@@ -15,7 +17,7 @@
             "eslint"
         ],
         "*": [
-            "prettier --write"
+            "prettier --write --ignore-unknown"
         ]
     },
     "devDependencies": {
@@ -28,7 +30,8 @@
         "husky": "^8.0.3",
         "lint-staged": "^13.2.2",
         "prettier": "^2.8.8",
-        "prettier-plugin-organize-imports": "^3.2.2"
+        "prettier-plugin-organize-imports": "^3.2.2",
+        "turbo": "^1.10.1"
     },
     "workspaces": [
         "packages/*"

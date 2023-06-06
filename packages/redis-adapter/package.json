@@ -23,8 +23,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "npm run build -w monban && rimraf dist && tsc",
-        "prepublishOnly": "npm run build"
+        "build": "rimraf dist && tsc"
     },
     "devDependencies": {
         "ioredis": "^5.3.2",
