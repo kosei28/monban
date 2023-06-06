@@ -1,5 +1,11 @@
 # @monban/upstash-redis-adapter
 
+## 0.1.3
+
+### Patch Changes
+
+-   d6db7ac: updated dependencies
+
 ## 1.0.0
 
 ### Patch Changes
