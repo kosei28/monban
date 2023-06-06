@@ -29,11 +29,11 @@
     },
     "devDependencies": {
         "@upstash/redis": "^1.21.0",
-        "monban": "^0.2.0",
+        "monban": "^0.3.0",
         "typescript": "^5.0.4"
     },
     "peerDependencies": {
         "@upstash/redis": "^1.21.0",
-        "monban": "^0.2.0"
+        "monban": "^0.3.0"
     }
 }
