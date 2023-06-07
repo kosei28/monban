@@ -8,9 +8,9 @@ Creates a new Monban instance.
 
 An object of provider instances.
 
--   [JsonProvider](../src/providers/json/)
--   [OAuth2Provider](../src/providers/oauth2/)
--   [GoogleProvider](../src/providers/google/)
+-   [JsonProvider](/packages/monban/src/providers/json/)
+-   [OAuth2Provider](/packages/monban/src/providers/oauth2/)
+-   [GoogleProvider](/packages/monban/src/providers/google/)
 
 ### `options`
 
@@ -46,6 +46,7 @@ default:
 [Cookie options.](https://github.com/jshttp/cookie#options-1)
 
 > **Note**
+>
 > If maxAge is set in the cookie option, it is overridden by the value of the maxAge option.
 
 #### `adapter?: Adapter`
@@ -54,10 +55,11 @@ default: `undefined`
 
 An adapter to store sessions.
 
--   [RedisAdapter](../../redis-adapter/)
--   [UpstashRedisAdapter](../../upstash-redis-adapter/)
+-   [RedisAdapter](/packages/redis-adapter/)
+-   [UpstashRedisAdapter](/packages/upstash-redis-adapter/)
 
 > **Warning**
+>
 > If you don't specify an adapter, sessions cannot be invalidated. This is not recommended for production.
 
 #### `callbacks`
