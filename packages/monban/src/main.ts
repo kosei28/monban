@@ -39,7 +39,7 @@ export type InferProfile<T> = T extends Providers<infer U> ? U : never;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type MonbanCallbacks<T extends User, U extends Providers<any>> = {
-    getUser: (profile: InferProfile<U>) => Promise<T> | undefined;
+    getUser: (profile: InferProfile<U>) => Promise<T | undefined>;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
