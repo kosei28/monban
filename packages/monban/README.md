@@ -24,7 +24,7 @@ npm install monban
 import { Monban } from 'monban';
 import { GoogleProvider } from 'monban/providers/google/server';
 
-type User = {
+export type User = {
     id: string;
     name: string;
     email: string;
@@ -67,7 +67,6 @@ export default {
 
 ```typescript
 import type { User } from './server.ts';
-import type { Session } from 'monban';
 import { MonbanClient } from 'monban/client';
 import { GoogleClient } from 'monban/providers/google/client';
 
@@ -81,3 +80,8 @@ monbanClient.onSessionChange((session) => {
     console.log(session);
 });
 ```
+
+## Documentation
+
+-   [Server](./docs/server.md)
+-   [Client](./docs/client.md)
