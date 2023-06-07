@@ -1,5 +1,11 @@
 # monban
 
+## 0.3.1
+
+### Patch Changes
+
+-   a86974f: fix return type of getUser callback
+
 ## 0.3.0
 
 ### Minor Changes
