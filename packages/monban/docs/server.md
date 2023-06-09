@@ -2,7 +2,7 @@
 
 ## `new Monban(providers, options)`
 
-Creates a new Monban instance.
+Creates a Monban instance.
 
 ### `providers`
 
