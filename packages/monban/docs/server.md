@@ -4,6 +4,40 @@
 
 Creates a Monban instance.
 
+```typescript
+export type User = {
+    id: string;
+    name: string;
+    email: string;
+    picture: string;
+};
+
+const monban = new Monban(
+    {
+        google: new GoogleProvider({
+            clientId: 'GOOGLE_CLIENT_ID',
+            clientSecret: 'GOOGLE_CLIENT_SECRET',
+        }),
+    },
+    {
+        secret: 'JWT_SECRET',
+        maxAge: 60 * 60 * 24 * 30,
+        callbacks: {
+            async getUser(profile) {
+                const user: User = {
+                    id: profile.id,
+                    name: profile.name,
+                    email: profile.email,
+                    picture: profile.picture,
+                };
+
+                return user;
+            },
+        },
+    },
+);
+```
+
 ### `providers`
 
 An object of provider instances.
@@ -74,42 +108,86 @@ If undefined is returned, the session will not be created and the login will fai
 
 Handles a request.
 
+```typescript
+const response: Response = await monban.handleRequest(request, '/monban');
+```
+
 ## `getSession(request)`
 
 Gets a session from a request.
+
+```typescript
+const session: Session<User> | undefined = await monban.getSession(request);
+```
 
 ## `createSessionCookie(session)`
 
 Creates a session cookie.
 
+```typescript
+const setCookie: string = await monban.createSessionCookie(session);
+```
+
 ## `createSession(profile)`
 
 Creates a session.
+
+```typescript
+const session: Session<User> | undefined = await monban.createSession(profile);
+```
 
 ## `verifySession(session)`
 
 Verifies a session.
 
+```typescript
+const isValid: boolean = await monban.verifySession(session);
+```
+
 ## `extendSession(session)`
 
 Extends a session.
+
+```typescript
+await monban.extendSession(session);
+```
 
 ## `invalidateSession(sessionId)`
 
 Invalidates a session.
 
+```typescript
+await monban.invalidateSession(sessionId);
+```
+
 ## `invalidateUserSessions(userId)`
 
 Invalidates all sessions of a user.
+
+```typescript
+await monban.invalidateUserSessions(userId);
+```
 
 ## `encodeToken(session)`
 
 Encodes a session into a JWT.
 
+```typescript
+const token: string = await monban.encodeToken(session);
+```
+
 ## `decodeToken(token)`
 
 Decodes and verifies a JWT.
 
+```typescript
+const payload: TokenPayload<User> | undefined = await monban.decodeToken(token);
+```
+
 ## `createCsrfToken()`
 
 Creates a CSRF token and a cookie.
+
+```typescript
+const { token, setCookie }: { token: string; setCookie: string } = monban.createCsrfToken();
+```

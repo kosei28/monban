@@ -58,7 +58,7 @@ const monban = new Monban(
 
 export default {
     async fetch(request: Request): Promise<Response> {
-        return monban.handleRequest(request, '/monban');
+        return await monban.handleRequest(request, '/monban');
     },
 };
 ```
