@@ -1,5 +1,13 @@
 # @monban/redis-adapter
 
+## 0.1.3
+
+### Patch Changes
+
+-   18ca149: update docs
+-   Updated dependencies [18ca149]
+    -   monban@0.3.2
+
 ## 0.1.2
 
 ### Patch Changes

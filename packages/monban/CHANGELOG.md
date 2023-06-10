@@ -1,5 +1,11 @@
 # monban
 
+## 0.3.2
+
+### Patch Changes
+
+-   18ca149: update docs
+
 ## 0.3.1
 
 ### Patch Changes
