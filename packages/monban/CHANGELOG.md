@@ -1,5 +1,11 @@
 # monban
 
+## 0.3.3
+
+### Patch Changes
+
+-   6635a00: fix docs links
+
 ## 0.3.2
 
 ### Patch Changes
