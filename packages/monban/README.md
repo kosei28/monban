@@ -83,5 +83,5 @@ monbanClient.onSessionChange((session) => {
 
 ## Documentation
 
--   [Server](/packages/monban/docs/server.md)
--   [Client](/packages/monban/docs/client.md)
+-   [Server](https://github.com/kosei28/monban/tree/master/packages/monban/docs/server.md)
+-   [Client](https://github.com/kosei28/monban/tree/master/packages/monban/docs/client.md)
