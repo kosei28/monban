@@ -1,5 +1,9 @@
 # `MonbanClient`
 
+```typescript
+import { MonbanClient } from 'monban/client';
+```
+
 ## `new MonbanClient(endpoint, providerClients)`
 
 Creates a Monban client.
@@ -24,9 +28,14 @@ An object of provider clients.
 -   [OAuth2Provider](/packages/monban/src/providers/oauth2/)
 -   [GoogleProvider](/packages/monban/src/providers/google/)
 
+> **Note**
+>
+> The providerClients keys must be the same as the keys of the providers on the server.
+
 ## `signIn.{provider}(options)`
 
 Signs in with a provider.
+The provider must be specified from the `providerClients` keys.
 
 ```typescript
 await monbanClient.signIn.google();

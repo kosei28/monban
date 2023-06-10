@@ -1,5 +1,9 @@
 # `Monban`
 
+```typescript
+import { Monban } from 'monban';
+```
+
 ## `new Monban(providers, options)`
 
 Creates a Monban instance.
