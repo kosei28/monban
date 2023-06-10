@@ -28,7 +28,11 @@ import { JsonClient } from 'monban/providers/json/client';
 Creates a JsonClient instance.
 
 ```typescript
-const jsonClient = new JsonClient<Profile>();
+const providerClients = {
+    json: new JsonClient<Profile>(),
+};
+
+const monbanClient = new MonbanClient<User, typeof providerClients>('/monban', providerClients);
 ```
 
 ## `signIn`

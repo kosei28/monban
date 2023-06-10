@@ -74,7 +74,11 @@ import { OAuth2Client } from 'monban/providers/oauth2/client';
 Creates an OAuth2 client instance.
 
 ```typescript
-const providerClient = new OAuth2Client();
+const providerClients = {
+    provider: new OAuth2Client(),
+};
+
+const monbanClient = new MonbanClient<User, typeof providerClients>('/monban', providerClients);
 ```
 
 ## `signIn`

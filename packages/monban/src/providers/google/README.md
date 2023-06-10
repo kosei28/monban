@@ -36,7 +36,11 @@ import { GoogleClient } from 'monban/providers/google/client';
 Creates an Google client instance.
 
 ```typescript
-const googleClient = new GoogleClient();
+const providerClients = {
+    google: new GoogleClient(),
+};
+
+const monbanClient = new MonbanClient<User, typeof providerClients>('/monban', providerClients);
 ```
 
 ## `signIn`
