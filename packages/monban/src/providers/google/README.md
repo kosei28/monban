@@ -15,6 +15,10 @@ const googleProvider = new GoogleProvider({
 });
 ```
 
+> **Note**
+>
+> The callback url required for configuration at the provider is `{endpoint}/providers/google/callback`.
+
 ### `options`
 
 #### `clientId: string`

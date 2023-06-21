@@ -35,6 +35,10 @@ const provider = new OAuth2Provider<Profile, Tokens>({
 });
 ```
 
+> **Note**
+>
+> The callback url required for configuration at the provider is `{endpoint}/providers/{provider}/callback`.
+
 ### `options`
 
 #### `authorizationUrl: string`
